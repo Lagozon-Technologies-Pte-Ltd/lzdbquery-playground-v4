@@ -167,3 +167,4 @@ cython_debug/
 /new_env
 static/automotive_wordcloud.png
 static/automotive_wordcloud.png
+/db_env
