@@ -7,13 +7,13 @@
     <title>DBQuery: Generative AI Assistant to your Database</title>
     <link rel="stylesheet" href="static/styles.css">
     <!-- Prism.js for Syntax Highlighting -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
     <link rel="shortcut icon" href="static\favicon.png" type="image/x-icon">
 
+    <!-- Prism.js for Syntax Highlighting -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-sql.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/js-yaml@4.1.0/dist/js-yaml.min.js"></script>
-
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-markdown.min.js"></script>
     <script src="https://cdn.plot.ly/plotly-2.24.1.min.js"></script>
 
 </head>
@@ -141,7 +141,8 @@
                         <div class="modal-content">
                             <span class="close-btn" onclick="closepromptPopup()">&times;</span>
                             <h2>Prompt</h2>
-                            <pre><code id="lang-prompt-content" ></code></pre>
+                            <pre><code id="lang-prompt-content" class="language-markdown"></code></pre>
+
                         </div>
                     </div>
                     <div id="interp-prompt-popup" class="modal">
