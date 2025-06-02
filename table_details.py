@@ -5,14 +5,28 @@ from operator import itemgetter
 from langchain.chains.openai_tools import create_extraction_chain_pydantic 
 from langchain_core.pydantic_v1 import BaseModel, Field
 from langchain_openai import ChatOpenAI 
-#from  langchain_openai.chat_models import with_structured_output
+from openai import AzureOpenAI
+from langchain_openai import AzureChatOpenAI
 
-OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY')
-llm = ChatOpenAI(model=configure.selected_models, temperature=0)
+
+
+AZURE_OPENAI_API_KEY = os.environ.get('AZURE_OPENAI_API_KEY')
+AZURE_OPENAI_ENDPOINT = os.environ.get('AZURE_OPENAI_ENDPOINT')
+AZURE_OPENAI_API_VERSION = os.environ.get('AZURE_OPENAI_API_VERSION', "2024-02-01")
+AZURE_DEPLOYMENT_NAME = os.environ.get('AZURE_DEPLOYMENT_NAME')
+
+llm = AzureChatOpenAI(
+    openai_api_version=AZURE_OPENAI_API_VERSION,
+    azure_deployment=AZURE_DEPLOYMENT_NAME,
+    azure_endpoint=AZURE_OPENAI_ENDPOINT,
+    api_key=AZURE_OPENAI_API_KEY,
+    temperature=0
+)
+
 from typing import List
-__import__('pysqlite3')
-import sys
-sys.modules['sqlite3'] = sys.modules.pop('pysqlite3')
+# __import__('pysqlite3')
+# import sys
+# sys.modules['sqlite3'] = sys.modules.pop('pysqlite3')
 
 def get_table_details(selected_subject='Demo', table_name=None):
     """

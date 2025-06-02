@@ -4,8 +4,6 @@ from google.cloud import bigquery
 import datetime
 from dotenv import load_dotenv
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder,FewShotChatMessagePromptTemplate,PromptTemplate # type: ignore
-
-
 import pandas as pd
 import os
 import configure
@@ -18,17 +16,38 @@ import json
 from langchain.embeddings import OpenAIEmbeddings
 from langchain.vectorstores import Chroma
 from langchain.prompts.example_selector import SemanticSimilarityExampleSelector
+from openai import AzureOpenAI
+from langchain_openai import AzureChatOpenAI
+from langchain.embeddings import AzureOpenAIEmbeddings 
 
 
-OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY')
-llm = ChatOpenAI(model=configure.selected_models, temperature=0)
+AZURE_OPENAI_API_KEY = os.environ.get('AZURE_OPENAI_API_KEY')
+AZURE_OPENAI_ENDPOINT = os.environ.get('AZURE_OPENAI_ENDPOINT')
+AZURE_OPENAI_API_VERSION = os.environ.get('AZURE_OPENAI_API_VERSION', "2024-02-01")
+AZURE_DEPLOYMENT_NAME = os.environ.get('AZURE_DEPLOYMENT_NAME')
+AZURE_EMBEDDING_DEPLOYMENT_NAME= os.environ.get('AZURE_EMBEDDING_DEPLOYMENT_NAME')
+# Initialize the Azure OpenAI client
+azure_openai_client = AzureOpenAI(
+    api_key=AZURE_OPENAI_API_KEY,
+    api_version=AZURE_OPENAI_API_VERSION,
+    azure_endpoint=AZURE_OPENAI_ENDPOINT
+)
+
+# OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY')
+llm = AzureChatOpenAI(
+    openai_api_version=AZURE_OPENAI_API_VERSION,
+    azure_deployment=AZURE_DEPLOYMENT_NAME,
+    azure_endpoint=AZURE_OPENAI_ENDPOINT,
+    api_key=AZURE_OPENAI_API_KEY,
+    temperature=0
+)
 from typing import List
 load_dotenv()
 import csv 
 from io import StringIO
 #table_details_prompt = os.getenv('TABLE_DETAILS_PROMPT')
 # Change if your schema is different
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+# OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 # LANGCHAIN_TRACING_V2 = os.getenv("LANGCHAIN_TRACING_V2")
 # LANGCHAIN_API_KEY = os.getenv("LANGCHAIN_API_KEY")
 # LANGCHAIN_ENDPOINT=os.getenv("LANGCHAIN_ENDPOINT")
@@ -257,7 +276,7 @@ class BigQuerySQLDatabase(SQLDatabase):
 
 
 
-# Connection for new AZURE SQL (code logic of Simran)
+# Connection for new AZURE SQL 
 def get_sql_db(selected_subject, mahindra_tables):
     print("connected to newer azure SQL DB.")
     try:
@@ -291,7 +310,13 @@ def get_chain(question, _messages, selected_model, selected_subject, selected_da
         prompt_file = "Generic_azure_prompt.txt" if question_type == "generic" else "Azure_prompt.txt"
     
     
-    llm = ChatOpenAI(model=selected_model, temperature=0)
+    llm = AzureChatOpenAI(
+    openai_api_version=AZURE_OPENAI_API_VERSION,
+    azure_deployment=AZURE_DEPLOYMENT_NAME,
+    azure_endpoint=AZURE_OPENAI_ENDPOINT,
+    api_key=AZURE_OPENAI_API_KEY,
+    temperature=0
+)
     def load_prompt():
         with open(prompt_file, "r", encoding="utf-8") as file:
             return file.read()
@@ -531,10 +556,18 @@ def get_example_selector(json_file_path: str):
     if not all(isinstance(example, dict) and 'input' in example and 'query' in example for example in examples):
         raise ValueError("Each example should be a dictionary with 'input' and 'query' keys")
     
-    # Create example selector
+    # Create Azure OpenAI embeddings instance
+    azure_embeddings = AzureOpenAIEmbeddings(
+        azure_deployment= AZURE_EMBEDDING_DEPLOYMENT_NAME,  # Your embedding model deployment name
+        openai_api_version=AZURE_OPENAI_API_VERSION,
+        azure_endpoint=AZURE_OPENAI_ENDPOINT,
+        api_key=AZURE_OPENAI_API_KEY,
+    )
+    
+    # Create example selector with Azure embeddings
     example_selector = SemanticSimilarityExampleSelector.from_examples(
         examples,
-        OpenAIEmbeddings(),
+        azure_embeddings,  # Use Azure embeddings instead of OpenAIEmbeddings
         Chroma,
         k=3,
         input_keys=["input"],

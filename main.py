@@ -26,6 +26,8 @@ import automotive_wordcloud_analysis as awa
 import zipfile
 from wordcloud import WordCloud
 from table_details import get_table_details, get_table_metadata  # Importing the function
+from openai import AzureOpenAI
+from langchain_openai import AzureChatOpenAI
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -107,12 +109,33 @@ class ChartRequest(BaseModel):
         }
 
 # Initialize OpenAI API key and model
-OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY')
-openai_client = openai.OpenAI(api_key=OPENAI_API_KEY)
+# OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY')
+# openai_client = openai.OpenAI(api_key=OPENAI_API_KEY)
+
+AZURE_OPENAI_API_KEY = os.environ.get('AZURE_OPENAI_API_KEY')
+AZURE_OPENAI_ENDPOINT = os.environ.get('AZURE_OPENAI_ENDPOINT')
+AZURE_OPENAI_API_VERSION = os.environ.get('AZURE_OPENAI_API_VERSION', "2024-02-01")
+AZURE_DEPLOYMENT_NAME = os.environ.get('AZURE_DEPLOYMENT_NAME')
+
+# Initialize the Azure OpenAI client
+azure_openai_client = AzureOpenAI(
+    api_key=AZURE_OPENAI_API_KEY,
+    api_version=AZURE_OPENAI_API_VERSION,
+    azure_endpoint=AZURE_OPENAI_ENDPOINT
+)
+
+llm = AzureChatOpenAI(
+    openai_api_version=AZURE_OPENAI_API_VERSION,
+    azure_deployment=AZURE_DEPLOYMENT_NAME,
+    azure_endpoint=AZURE_OPENAI_ENDPOINT,
+    api_key=AZURE_OPENAI_API_KEY,
+    temperature=0
+)
 
 databases = ["GCP", "PostgreSQL-Azure", "Azure SQL"]
 question_dropdown = os.getenv('Question_dropdown')
-llm = ChatOpenAI(model=gpt_model, temperature=0)  # Adjust model as necessary
+# llm = ChatOpenAI(model=gpt_model, temperature=0)# Adjust model as necessary
+
 if 'messages' not in session_state:
     session_state['messages'] = []
 
@@ -436,7 +459,7 @@ def format_number(x):
 @app.post("/transcribe-audio/")
 async def transcribe_audio(file: UploadFile = File(...)):
     """
-    Transcribes an audio file using OpenAI's Whisper API.
+    Transcribes an audio file using Azure OpenAI's Whisper model.
 
     Args:
         file (UploadFile): The audio file to transcribe.
@@ -445,24 +468,28 @@ async def transcribe_audio(file: UploadFile = File(...)):
         JSONResponse: A JSON response containing the transcription or an error message.
     """
     try:
-        api_key = os.getenv("OPENAI_API_KEY")
-        if not api_key:
-            raise HTTPException(status_code=500, detail="Missing OpenAI API Key.")
+        # Check if API key is available
+        if not AZURE_OPENAI_API_KEY:
+            raise HTTPException(status_code=500, detail="Missing Azure OpenAI API Key.")
+        
+        # Read audio file
         audio_bytes = await file.read()
         audio_bio = BytesIO(audio_bytes)
-        audio_bio.name = "audio.webm"
+        audio_bio.name = file.filename  # Use original filename or set appropriate extension
 
-        # Fix: Using OpenAI API correctly
-        transcript = openai_client.audio.transcriptions.create(
-            model="whisper-1",
+        # Transcribe using Azure OpenAI
+        transcript = azure_openai_client.audio.transcriptions.create(
+            model="whisper-1",  # Azure deployment name for Whisper model
             file=audio_bio
         )
 
-        # Fix: Access `transcript.text` instead of treating it as a dictionary
         return {"transcription": transcript.text}
 
     except Exception as e:
-        return JSONResponse(content={"error": f"Error transcribing audio: {str(e)}"}, status_code=500)
+        return JSONResponse(
+            content={"error": f"Error transcribing audio: {str(e)}"}, 
+            status_code=500
+        )
 
 @app.get("/get_questions/")
 @app.get("/get_questions")
@@ -771,7 +798,6 @@ async def submit_query(
         
         
         relationships = find_relationships_for_tables(chosen_tables , 'table_relation.json')
-        print("simran", relationships)
         table_details = get_table_details(selected_subject=selected_subject,table_name=chosen_tables)
         response, chosen_tables, tables_data, agent_executor, final_prompt = invoke_chain(
                 llm_reframed_query, session_state['messages'], model,
