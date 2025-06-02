@@ -1,0 +1,210 @@
+table_name,table_description,column_name&description
+MH_MODEL_MASTER,Contains vehicle model master data,MODL_CD (STRING) NULLABLE: Model Code
+MH_MODEL_MASTER,Contains vehicle model master data,MODL_DESC (STRING) NULLABLE: Model Description
+MH_MODEL_MASTER,Contains vehicle model master data,MODL_GROP_CD (STRING) NULLABLE: Model Group Code
+MH_MODEL_MASTER,Contains vehicle model master data,VARNT_CD (STRING) NULLABLE: Variant Code
+MH_MODEL_MASTER,Contains vehicle model master data,SEAT_CAPCTY (INTEGER) NULLABLE: Seat Capacity
+MH_MODEL_MASTER,Contains vehicle model master data,MODL_INVC_DESC (STRING) NULLABLE: Model Invoice Description
+MH_MODEL_MASTER,Contains vehicle model master data,FAMLY_CD (STRING) NULLABLE: Family Code
+MH_MODEL_MASTER,Contains vehicle model master data,COLR_CD (STRING) NULLABLE: Color Code
+MH_MODEL_MASTER,Contains vehicle model master data,PRODCT_DIVSN (STRING) NULLABLE: Product Division
+MH_MODEL_MASTER,Contains vehicle model master data,BATCH (STRING) NULLABLE: Batch
+MH_MODEL_MASTER,Contains vehicle model master data,OEM_MODL_CD (STRING) NULLABLE: OEM Model Code
+MH_MODEL_MASTER,Contains vehicle model master data,SAL_MODL_GROP (STRING) NULLABLE: Sales Model Group
+MH_MODEL_MASTER,Contains vehicle model master data,MODL_GROP_ORDR_BY (INTEGER) NULLABLE: Model Group Order By
+MH_MODEL_MASTER,Contains vehicle model master data,SEGMNT_CD (STRING) NULLABLE: Segment Code
+MH_MODEL_MASTER,Contains vehicle model master data,VARNT_DESC (STRING) NULLABLE: Variant Description
+MH_MODEL_MASTER,Contains vehicle model master data,FAMLY_DESC (STRING) NULLABLE: Family Description
+MH_MODEL_MASTER,Contains vehicle model master data,ACTV_IND (STRING) NULLABLE: Active Indicator
+MH_MODEL_MASTER,Contains vehicle model master data,MODL_GROP_DESC (STRING) NULLABLE: Model Group Description
+MH_MODEL_MASTER,Contains vehicle model master data,FUEL_TYPE (STRING) NULLABLE: Fuel Type
+MH_MODEL_MASTER,Contains vehicle model master data,EMISSION (STRING) NULLABLE: Emission
+MH_MODEL_MASTER,Contains vehicle model master data,DRIV (STRING) NULLABLE: Drive
+MH_MODEL_MASTER,Contains vehicle model master data,TRIM_LEVL (STRING) NULLABLE: Trim Level
+MH_MODEL_MASTER,Contains vehicle model master data,TRANSMISSION (STRING) NULLABLE: Transmission
+
+MH_AD_AI_DIMENSION,Contains dealer and sales hierarchy dimension data,delr_name (STRING) NULLABLE: Dealer Name
+MH_AD_AI_DIMENSION,Contains dealer and sales hierarchy dimension data,prodct_divsn (STRING) NULLABLE: Product Division
+MH_AD_AI_DIMENSION,Contains dealer and sales hierarchy dimension data,actv_ind (STRING) NULLABLE: Active Indicator
+MH_AD_AI_DIMENSION,Contains dealer and sales hierarchy dimension data,parnt_grop (STRING) NULLABLE: Parent Group Code
+MH_AD_AI_DIMENSION,Contains dealer and sales hierarchy dimension data,PARENT_GROUP_NAME (STRING) NULLABLE: Parent Group Name
+MH_AD_AI_DIMENSION,Contains dealer and sales hierarchy dimension data,loctn_name (STRING) NULLABLE: Location Name
+MH_AD_AI_DIMENSION,Contains dealer and sales hierarchy dimension data,loctn_cd (STRING) NULLABLE: Location Code
+MH_AD_AI_DIMENSION,Contains dealer and sales hierarchy dimension data,delr_cd (STRING) NULLABLE: Dealer Code
+MH_AD_AI_DIMENSION,Contains dealer and sales hierarchy dimension data,area_name (STRING) NULLABLE: Area Name
+MH_AD_AI_DIMENSION,Contains dealer and sales hierarchy dimension data,zone_name (STRING) NULLABLE: Zone Name
+MH_AD_AI_DIMENSION,Contains dealer and sales hierarchy dimension data,asm_name (STRING) NULLABLE: ASM Name
+MH_AD_AI_DIMENSION,Contains dealer and sales hierarchy dimension data,ccm_name (STRING) NULLABLE: CCM Name
+MH_AD_AI_DIMENSION,Contains dealer and sales hierarchy dimension data,rsm_name (STRING) NULLABLE: RSM Name
+MH_AD_AI_DIMENSION,Contains dealer and sales hierarchy dimension data,rccm_name (STRING) NULLABLE: RCCM Name
+MH_AD_AI_DIMENSION,Contains dealer and sales hierarchy dimension data,zonal_head_sales (STRING) NULLABLE: Zonal Head Sales
+MH_AD_AI_DIMENSION,Contains dealer and sales hierarchy dimension data,zonal_head_cc (STRING) NULLABLE: Zonal Head Customer Care
+
+MH_CUST_VERBATIM,Contains customer issue verbatim related to repair orders data,ro_number (STRING) NULLABLE: RO Number
+MH_CUST_VERBATIM,Contains customer issue verbatim related to repair orders data,sv_ro_hdr_sk (INTEGER) NULLABLE: Service RO Header SK
+MH_CUST_VERBATIM,Contains customer issue verbatim related to repair orders data,demanded_verbatim (STRING) NULLABLE: Demanded Verbatim
+MH_CUST_VERBATIM,Contains customer issue verbatim related to repair orders data,verbatim_group (STRING) NULLABLE: Verbatim Group
+MH_CUST_VERBATIM,Contains customer issue verbatim related to repair orders data,verbatim_code (STRING) NULLABLE: Verbatim Code
+MH_CUST_VERBATIM,Contains customer issue verbatim related to repair orders data,cust_verbtm_desc (STRING) NULLABLE: Customer Verbatim Description
+MH_CUST_VERBATIM,Contains customer issue verbatim related to repair orders data,verbatim_group_desc (STRING) NULLABLE: Verbatim Group Description
+
+MH_RO_LABOUR,Contains OEM and Local Labor consumed in repair orders data,sv_ro_hdr_sk (INTEGER) NULLABLE: Service RO Header SK
+MH_RO_LABOUR,Contains OEM and Local Labor consumed in repair orders data,sv_ro_bill_hdr_sk (INTEGER) NULLABLE: Service RO Bill Header SK
+MH_RO_LABOUR,Contains OEM and Local Labor consumed in repair orders data,sv_ro_bill_labr_dtl_sk (INTEGER) NULLABLE: Service RO Bill Labour Detail SK
+MH_RO_LABOUR,Contains OEM and Local Labor consumed in repair orders data,standrd_hrs (NUMERIC) NULLABLE: Standard Hours
+MH_RO_LABOUR,Contains OEM and Local Labor consumed in repair orders data,sv_labr_mst_sk (INTEGER) NULLABLE: Service Labour Master SK
+MH_RO_LABOUR,Contains OEM and Local Labor consumed in repair orders data,labr_desc (STRING) NULLABLE: Labour Description
+MH_RO_LABOUR,Contains OEM and Local Labor consumed in repair orders data,labr_tax (NUMERIC) NULLABLE: Labour Tax
+MH_RO_LABOUR,Contains OEM and Local Labor consumed in repair orders data,labrAmount (NUMERIC) NULLABLE: Labour Amount
+MH_RO_LABOUR,Contains OEM and Local Labor consumed in repair orders data,labr_rate (NUMERIC) NULLABLE: Labour Rate
+MH_RO_LABOUR,Contains OEM and Local Labor consumed in repair orders data,labr_charg_hrs (NUMERIC) NULLABLE: Labour Charged Hours
+MH_RO_LABOUR,Contains OEM and Local Labor consumed in repair orders data,labr_discnt_amnt (NUMERIC) NULLABLE: Labour Discount Amount
+MH_RO_LABOUR,Contains OEM and Local Labor consumed in repair orders data,labr_totl_amnt (NUMERIC) NULLABLE: Labour Total Amount
+MH_RO_LABOUR,Contains OEM and Local Labor consumed in repair orders data,totalBillAmount (NUMERIC) NULLABLE: Total Bill Amount
+MH_RO_LABOUR,Contains OEM and Local Labor consumed in repair orders data,labour_billable_type_name (STRING) NULLABLE: Labour Billable Type Name
+MH_RO_LABOUR,Contains OEM and Local Labor consumed in repair orders data,labour_type_name (STRING) NULLABLE: Labour Type Name
+MH_RO_LABOUR,Contains OEM and Local Labor consumed in repair orders data,labour_group_name (STRING) NULLABLE: Labour Group Name
+
+MH_RO_PARTS,Contains OEM and Local Parts consumed in repair orders data,sv_ro_hdr_sk (INTEGER) NULLABLE: Service RO Header SK
+MH_RO_PARTS,Contains OEM and Local Parts consumed in repair orders data,sv_ro_bill_hdr_sk (INTEGER) NULLABLE: Service RO Bill Header SK
+MH_RO_PARTS,Contains OEM and Local Parts consumed in repair orders data,sv_ro_bill_part_dtl_sk (INTEGER) NULLABLE: Service RO Bill Part Detail SK
+MH_RO_PARTS,Contains OEM and Local Parts consumed in repair orders data,part_code (STRING) NULLABLE: Part Code
+MH_RO_PARTS,Contains OEM and Local Parts consumed in repair orders data,part_desc (STRING) NULLABLE: Part Description
+MH_RO_PARTS,Contains OEM and Local Parts consumed in repair orders data,part_quantity (NUMERIC) NULLABLE: Part Quantity
+MH_RO_PARTS,Contains OEM and Local Parts consumed in repair orders data,part_rate (NUMERIC) NULLABLE: Part Rate
+MH_RO_PARTS,Contains OEM and Local Parts consumed in repair orders data,partamount (NUMERIC) NULLABLE: Part Amount
+MH_RO_PARTS,Contains OEM and Local Parts consumed in repair orders data,part_tax (NUMERIC) NULLABLE: Part Tax
+MH_RO_PARTS,Contains OEM and Local Parts consumed in repair orders data,part_discnt_amnt (NUMERIC) NULLABLE: Part Discount Amount
+MH_RO_PARTS,Contains OEM and Local Parts consumed in repair orders data,part_totl_amnt (NUMERIC) NULLABLE: Part Total Amount
+MH_RO_PARTS,Contains OEM and Local Parts consumed in repair orders data,oem_part_ind (STRING) NULLABLE: OEM Part Indicator
+MH_RO_PARTS,Contains OEM and Local Parts consumed in repair orders data,abc_ind (STRING) NULLABLE: ABC Indicator
+MH_RO_PARTS,Contains OEM and Local Parts consumed in repair orders data,hml_ind (STRING) NULLABLE: HML Indicator
+MH_RO_PARTS,Contains OEM and Local Parts consumed in repair orders data,landed_cost (NUMERIC) NULLABLE: Landed Cost
+MH_RO_PARTS,Contains OEM and Local Parts consumed in repair orders data,ris_ind (STRING) NULLABLE: RIS Indicator
+MH_RO_PARTS,Contains OEM and Local Parts consumed in repair orders data,purchs_pric (NUMERIC) NULLABLE: Purchase Price
+MH_RO_PARTS,Contains OEM and Local Parts consumed in repair orders data,selng_pric (NUMERIC) NULLABLE: Selling Price
+MH_RO_PARTS,Contains OEM and Local Parts consumed in repair orders data,mrp (NUMERIC) NULLABLE: MRP
+MH_RO_PARTS,Contains OEM and Local Parts consumed in repair orders data,hsn (STRING) NULLABLE: HSN
+MH_RO_PARTS,Contains OEM and Local Parts consumed in repair orders data,net_delr_pric (NUMERIC) NULLABLE: Net Dealer Price
+MH_RO_PARTS,Contains OEM and Local Parts consumed in repair orders data,discnt_rate (NUMERIC) NULLABLE: Discount Rate
+MH_RO_PARTS,Contains OEM and Local Parts consumed in repair orders data,gndp (NUMERIC) NULLABLE: GNDP
+MH_RO_PARTS,Contains OEM and Local Parts consumed in repair orders data,ndp (NUMERIC) NULLABLE: NDP
+MH_RO_PARTS,Contains OEM and Local Parts consumed in repair orders data,bill_share (NUMERIC) NULLABLE: Bill Share
+MH_RO_PARTS,Contains OEM and Local Parts consumed in repair orders data,total_bill_amount (NUMERIC) NULLABLE: Total Bill Amount
+MH_RO_PARTS,Contains OEM and Local Parts consumed in repair orders data,part_category_description (STRING) NULLABLE: Part Category Description
+MH_RO_PARTS,Contains OEM and Local Parts consumed in repair orders data,part_billable_type_name (STRING) NULLABLE: Part Billable Type Name
+MH_RO_PARTS,Contains OEM and Local Parts consumed in repair orders data,discount_type_name (STRING) NULLABLE: Discount Type Name
+MH_RO_PARTS,Contains OEM and Local Parts consumed in repair orders data,product_division_name (STRING) NULLABLE: Product Division Name
+MH_RO_PARTS,Contains OEM and Local Parts consumed in repair orders data,part_type_name (STRING) NULLABLE: Part Type Name
+MH_RO_PARTS,Contains OEM and Local Parts consumed in repair orders data,part_category_group (STRING) NULLABLE: Part Category Group
+MH_RO_PARTS,Contains OEM and Local Parts consumed in repair orders data,common_part_category (STRING) NULLABLE: Common Part Category
+MH_RO_PARTS,Contains OEM and Local Parts consumed in repair orders data,category1 (STRING) NULLABLE: Category1
+
+MH_RO_HDR_DETAILS,Contains Repair Order header details,RO_CANCL_DATE (DATE) NULLABLE: RO Cancel Date
+MH_RO_HDR_DETAILS,Contains Repair Order header details,SPOT_CARE_APPL_FL (STRING) NULLABLE: Spot Care Applied Flag
+MH_RO_HDR_DETAILS,Contains Repair Order header details,VEHCL_TOE_IND (STRING) NULLABLE: Vehicle TOE Indicator
+MH_RO_HDR_DETAILS,Contains Repair Order header details,VIN (STRING) NULLABLE: VIN
+MH_RO_HDR_DETAILS,Contains Repair Order header details,RO_DATE (DATE) NULLABLE: RO Date
+MH_RO_HDR_DETAILS,Contains Repair Order header details,RO_DATETIME (TIMESTAMP) NULLABLE: RO DateTime
+MH_RO_HDR_DETAILS,Contains Repair Order header details,BILL_DATE (DATE) NULLABLE: Bill Date
+MH_RO_HDR_DETAILS,Contains Repair Order header details,BILL_DATETIME (TIMESTAMP) NULLABLE: Bill DateTime
+MH_RO_HDR_DETAILS,Contains Repair Order header details,RO_CLOSED_DATE (DATE) NULLABLE: RO Closed Date
+MH_RO_HDR_DETAILS,Contains Repair Order header details,RO_STATS (STRING) NULLABLE: RO Status
+MH_RO_HDR_DETAILS,Contains Repair Order header details,ODMTR_REDNG (INTEGER) NULLABLE: Odometer Reading
+MH_RO_HDR_DETAILS,Contains Repair Order header details,SV_APNTMNT_HDR_SK (INTEGER) NULLABLE: Service Appointment Header SK
+MH_RO_HDR_DETAILS,Contains Repair Order header details,RO_BILL_DATE (DATE) NULLABLE: RO Bill Date
+MH_RO_HDR_DETAILS,Contains Repair Order header details,CANCL_DATE (DATE) NULLABLE: Cancel Date
+MH_RO_HDR_DETAILS,Contains Repair Order header details,SV_RO_HDR_SK (INTEGER) NULLABLE: Service RO Header SK
+MH_RO_HDR_DETAILS,Contains Repair Order header details,PARNT_GROP (STRING) NULLABLE: Parent Group
+MH_RO_HDR_DETAILS,Contains Repair Order header details,LOCTN_CD (STRING) NULLABLE: Location Code
+MH_RO_HDR_DETAILS,Contains Repair Order header details,RO_ID (STRING) NULLABLE: RO ID
+MH_RO_HDR_DETAILS,Contains Repair Order header details,PARTS_TOTL_AMNT (NUMERIC) NULLABLE: Parts Total Amount
+MH_RO_HDR_DETAILS,Contains Repair Order header details,LABR_TOTL_AMNT (NUMERIC) NULLABLE: Labour Total Amount
+MH_RO_HDR_DETAILS,Contains Repair Order header details,DOC_AMNT (NUMERIC) NULLABLE: Document Amount
+MH_RO_HDR_DETAILS,Contains Repair Order header details,PARTS_BASC_AMNT (NUMERIC) NULLABLE: Parts Basic Amount
+MH_RO_HDR_DETAILS,Contains Repair Order header details,LABR_BASC_AMNT (NUMERIC) NULLABLE: Labour Basic Amount
+MH_RO_HDR_DETAILS,Contains Repair Order header details,SA_EMPLY_NAME (STRING) NULLABLE: Service Advisor Employee Name
+MH_RO_HDR_DETAILS,Contains Repair Order header details,PROMSD_DELVRY_DATE (DATE) NULLABLE: Promised Delivery Date
+MH_RO_HDR_DETAILS,Contains Repair Order header details,REVSD_PROMSD_DELVRY_DATE (DATE) NULLABLE: Revised Promised Delivery Date
+MH_RO_HDR_DETAILS,Contains Repair Order header details,REVST_IND (STRING) NULLABLE: Revisit Indicator
+MH_RO_HDR_DETAILS,Contains Repair Order header details,MODL_CD (STRING) NULLABLE: Model Code
+MH_RO_HDR_DETAILS,Contains Repair Order header details,SV_RO_BILL_HDR_SK (INTEGER) NULLABLE: Service RO Bill Header SK
+MH_RO_HDR_DETAILS,Contains Repair Order header details,ONLNE_PAYMNT_FLG (STRING) NULLABLE: Online Payment Flag
+MH_RO_HDR_DETAILS,Contains Repair Order header details,SEGMNT_CD (STRING) NULLABLE: Segment Code
+MH_RO_HDR_DETAILS,Contains Repair Order header details,EXPRS_SERVC_IND (STRING) NULLABLE: Express Service Indicator
+MH_RO_HDR_DETAILS,Contains Repair Order header details,CHAS_NUMBR (STRING) NULLABLE: Chassis Number
+MH_RO_HDR_DETAILS,Contains Repair Order header details,KEY_ACNT_SEGMNT (STRING) NULLABLE: Key Account Segment
+MH_RO_HDR_DETAILS,Contains Repair Order header details,GOVT_VEHCL (STRING) NULLABLE: Government Vehicle
+MH_RO_HDR_DETAILS,Contains Repair Order header details,COLR_CD (STRING) NULLABLE: Color Code
+MH_RO_HDR_DETAILS,Contains Repair Order header details,OEM_MODL_CD (STRING) NULLABLE: OEM Model Code
+MH_RO_HDR_DETAILS,Contains Repair Order header details,PRODCT_DIVSN (STRING) NULLABLE: Product Division
+MH_RO_HDR_DETAILS,Contains Repair Order header details,PART_CHARG_AMNT (NUMERIC) NULLABLE: Part Charge Amount
+MH_RO_HDR_DETAILS,Contains Repair Order header details,LABR_CHARG_AMNT (NUMERIC) NULLABLE: Labour Charge Amount
+MH_RO_HDR_DETAILS,Contains Repair Order header details,SDD_FLAG (STRING) NULLABLE: SDD Flag
+MH_RO_HDR_DETAILS,Contains Repair Order header details,RO_GT_72 (STRING) NULLABLE: RO Greater Than 72 Hours
+MH_RO_HDR_DETAILS,Contains Repair Order header details,RO_LT_ET_72 (STRING) NULLABLE: RO Less Than or Equal To 72 Hours
+MH_RO_HDR_DETAILS,Contains Repair Order header details,RO_LT_ET_48 (STRING) NULLABLE: RO Less Than or Equal To 48 Hours
+MH_RO_HDR_DETAILS,Contains Repair Order header details,RO_LT_ET_24 (STRING) NULLABLE: RO Less Than or Equal To 24 Hours
+MH_RO_HDR_DETAILS,Contains Repair Order header details,RO_CLOSE_DIFF (INTEGER) NULLABLE: RO Close Difference
+MH_RO_HDR_DETAILS,Contains Repair Order header details,TEA_FLAG (STRING) NULLABLE: TEA Flag
+MH_RO_HDR_DETAILS,Contains Repair Order header details,CEA_FLAG (STRING) NULLABLE: CEA Flag
+MH_RO_HDR_DETAILS,Contains Repair Order header details,FLAG_MTRAQ (STRING) NULLABLE: MTRAQ Flag
+MH_RO_HDR_DETAILS,Contains Repair Order header details,M1_M2_M3_M4 (STRING) NULLABLE: M1 M2 M3 M4
+MH_RO_HDR_DETAILS,Contains Repair Order header details,KEY (STRING) NULLABLE: Key
+MH_RO_HDR_DETAILS,Contains Repair Order header details,RO_KEY (STRING) NULLABLE: RO Key
+MH_RO_HDR_DETAILS,Contains Repair Order header details,KEY_EMP (STRING) NULLABLE: Key Employee
+MH_RO_HDR_DETAILS,Contains Repair Order header details,KEY_BAY (STRING) NULLABLE: Key Bay
+MH_RO_HDR_DETAILS,Contains Repair Order header details,RO_Day_Closed (INTEGER) NULLABLE: RO Day Closed
+MH_RO_HDR_DETAILS,Contains Repair Order header details,ORGNL_WARNTY_START_DATE (DATE) NULLABLE: Original Warranty Start Date
+MH_RO_HDR_DETAILS,Contains Repair Order header details,RSA_REGSTRTN_STATS (STRING) NULLABLE: RSA Registration Status
+MH_RO_HDR_DETAILS,Contains Repair Order header details,MAX_TO_DAYS_FRM_DOS (INTEGER) NULLABLE: Max TO Days from DOS
+MH_RO_HDR_DETAILS,Contains Repair Order header details,Arrived_date_for_Eligibility (DATE) NULLABLE: Arrived Date for Eligibility
+MH_RO_HDR_DETAILS,Contains Repair Order header details,RSA_Registartion_Flag (STRING) NULLABLE: RSA Registration Flag
+MH_RO_HDR_DETAILS,Contains Repair Order header details,RSA_EXPRY_DATE (DATE) NULLABLE: RSA Expiry Date
+MH_RO_HDR_DETAILS,Contains Repair Order header details,Eligible_Vehicle_Flag (STRING) NULLABLE: Eligible Vehicle Flag
+MH_RO_HDR_DETAILS,Contains Repair Order header details,ORGNL_WARNTY_EXPRY_DATE (DATE) NULLABLE: Original Warranty Expiry Date
+MH_RO_HDR_DETAILS,Contains Repair Order header details,ORGNL_WARNTY_EXPRY_KM (INTEGER) NULLABLE: Original Warranty Expiry KM
+MH_RO_HDR_DETAILS,Contains Repair Order header details,Warranty_Flag (STRING) NULLABLE: Warranty Flag
+MH_RO_HDR_DETAILS,Contains Repair Order header details,VALID_TO (DATE) NULLABLE: Valid To
+MH_RO_HDR_DETAILS,Contains Repair Order header details,Shield_validity_Flag (STRING) NULLABLE: Shield Validity Flag
+MH_RO_HDR_DETAILS,Contains Repair Order header details,SCHEME_EXP_DATE (DATE) NULLABLE: Scheme Expiry Date
+MH_RO_HDR_DETAILS,Contains Repair Order header details,Shield_Registration_Flag (STRING) NULLABLE: Shield Registration Flag
+MH_RO_HDR_DETAILS,Contains Repair Order header details,MRP (NUMERIC) NULLABLE: MRP
+MH_RO_HDR_DETAILS,Contains Repair Order header details,NDP (NUMERIC) NULLABLE: NDP
+MH_RO_HDR_DETAILS,Contains Repair Order header details,PART_QTY (NUMERIC) NULLABLE: Part Quantity
+MH_RO_HDR_DETAILS,Contains Repair Order header details,Ageing_Bucket (NUMERIC) NULLABLE: Ageing Bucket
+MH_RO_HDR_DETAILS,Contains Repair Order header details,BROUGHT_BY_NAME (STRING) NULLABLE: Brought By Name
+MH_RO_HDR_DETAILS,Contains Repair Order header details,VEHICLE_BROUGHT_BY (STRING) NULLABLE: Vehicle Brought By
+MH_RO_HDR_DETAILS,Contains Repair Order header details,SA_FEEDBCK_STATS (STRING) NULLABLE: Service Advisor Feedback Status
+MH_RO_HDR_DETAILS,Contains Repair Order header details,ACCESORIES_FLAG (STRING) NULLABLE: Accessories Flag
+MH_RO_HDR_DETAILS,Contains Repair Order header details,DIV_KEY (STRING) NULLABLE: Division Key
+MH_RO_HDR_DETAILS,Contains Repair Order header details,REG_NUMBR (STRING) NULLABLE: Registration Number
+MH_RO_HDR_DETAILS,Contains Repair Order header details,RO_REMRKS (STRING) NULLABLE: RO Remarks
+MH_RO_HDR_DETAILS,Contains Repair Order header details,BAY_ACTV_IND (STRING) NULLABLE: Bay Active Indicator
+MH_RO_HDR_DETAILS,Contains Repair Order header details,APPL_TO (STRING) NULLABLE: Applied To
+MH_RO_HDR_DETAILS,Contains Repair Order header details,WARRANTY_AGEING_RO (INTEGER) NULLABLE: Warranty Ageing RO
+MH_RO_HDR_DETAILS,Contains Repair Order header details,WARRANTY_AGEING_TDAY (INTEGER) NULLABLE: Warranty Ageing Today
+MH_RO_HDR_DETAILS,Contains Repair Order header details,SERVC_TYPE_DESC (STRING) NULLABLE: Service Type Description
+MH_RO_HDR_DETAILS,Contains Repair Order header details,SERV_CATGRY_DESC (STRING) NULLABLE: Service Category Description
+MH_RO_HDR_DETAILS,Contains Repair Order header details,MODL_COLR_KEY (STRING) NULLABLE: Model Color Key
+MH_RO_HDR_DETAILS,Contains Repair Order header details,ro_source_name (STRING) NULLABLE: RO Source Name
+MH_RO_HDR_DETAILS,Contains Repair Order header details,service_type_name (STRING) NULLABLE: Service Type Name
+MH_RO_HDR_DETAILS,Contains Repair Order header details,repair_order_same_day_delay_reason (STRING) NULLABLE: Repair Order Same Day Delay Reason
+MH_RO_HDR_DETAILS,Contains Repair Order header details,estimation_variation_reason (STRING) NULLABLE: Estimation Variation Reason
+MH_RO_HDR_DETAILS,Contains Repair Order header details,repair_order_cancel_reason (STRING) NULLABLE: Repair Order Cancel Reason
+MH_RO_HDR_DETAILS,Contains Repair Order header details,repair_order_delay_reason (STRING) NULLABLE: Repair Order Delay Reason
+MH_RO_HDR_DETAILS,Contains Repair Order header details,pendency_reason (STRING) NULLABLE: Pendency Reason
+MH_RO_HDR_DETAILS,Contains Repair Order header details,time_revision_approval_reason (STRING) NULLABLE: Time Revision Approval Reason
+MH_RO_HDR_DETAILS,Contains Repair Order header details,cost_revision_approval_reason (STRING) NULLABLE: Cost Revision Approval Reason
+MH_RO_HDR_DETAILS,Contains Repair Order header details,pickup_type_name (STRING) NULLABLE: Pickup Type Name
+MH_RO_HDR_DETAILS,Contains Repair Order header details,drop_type_name (STRING) NULLABLE: Drop Type Name
+MH_RO_HDR_DETAILS,Contains Repair Order header details,ro_doc_type_name (STRING) NULLABLE: RO Document Type Name
+MH_RO_HDR_DETAILS,Contains Repair Order header details,bill_type_name (STRING) NULLABLE: Bill Type Name
+MH_RO_HDR_DETAILS,Contains Repair Order header details,service_campaign_type_name (STRING) NULLABLE: Service Campaign Type Name
+MH_RO_HDR_DETAILS,Contains Repair Order header details,tech_employee_name (STRING) NULLABLE: Technician Employee Name
+MH_RO_HDR_DETAILS,Contains Repair Order header details,product_division_name (STRING) NULLABLE: Product Division Name
+MH_RO_HDR_DETAILS,Contains Repair Order header details,taxi_indicator (STRING) NULLABLE: Taxi Indicator
+MH_RO_HDR_DETAILS,Contains Repair Order header details,bay_type_name (STRING) NULLABLE: Bay Type Name
+MH_RO_HDR_DETAILS,Contains Repair Order header details,revist_flag (STRING) NULLABLE: Revisit Flag
+MH_RO_HDR_DETAILS,Contains Repair Order header details,repeat_repair_flag (STRING) NULLABLE: Repeat Repair Flag
+MH_RO_HDR_DETAILS,Contains Repair Order header details,service_group (STRING) NULLABLE: Service Group

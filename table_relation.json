@@ -1,0 +1,107 @@
+{
+  "relations": [
+    {
+      "type": "one_to_many",
+      "source": "MH_MODEL_MASTER",
+      "target": "MH_RO_HDR_DETAILS",
+      "source_key": "MODEL_CD",
+      "target_key": "MODEL_CD",
+      "description": "Model Master to Repair Order Header Details"
+    },
+    {
+      "type": "one_to_many",
+      "source": "MH_AD_AI_DIMENSION",
+      "target": "MH_RO_HDR_DETAILS",
+      "source_key": ["PARENTGROUP", "LOCATIONCODE", "PRODDIV"],
+      "target_key": ["DIV_KEY"],
+      "description": "Dealer Master to Repair Order Header Details (composite key)"
+    },
+    {
+      "type": "one_to_many",
+      "source": "MH_RO_HDR_DETAILS",
+      "target": "MH_RO_PARTS",
+      "source_key": "sv_ro_bill_hdr_sk",
+      "target_key": "sv_ro_bill_hdr_sk",
+      "description": "Repair Order Header to Parts"
+    },
+    {
+      "type": "one_to_many",
+      "source": "MH_RO_HDR_DETAILS",
+      "target": "MH_RO_LABOUR",
+      "source_key": "sv_ro_bill_hdr_sk",
+      "target_key": "sv_ro_bill_hdr_sk",
+      "description": "Repair Order Header to Labour"
+    },
+    {
+      "type": "one_to_many",
+      "source": "MH_RO_HDR_DETAILS",
+      "target": "MH_CUST_VERBATIM",
+      "source_key": "sv_ro_hdr_sk",
+      "target_key": "sv_ro_hdr_sk",
+      "description": "Repair Order Header to Customer Verbatim"
+    },
+    {
+      "type": "one_to_many",
+      "source": "MH_RO_PARTS",
+      "target": "MH_RO_HDR_DETAILS",
+      "source_key": "sv_ro_bill_hdr_sk",
+      "target_key": "sv_ro_bill_hdr_sk",
+      "description": "Parts to Repair Order Header"
+    },
+    {
+      "type": "one_to_many",
+      "source": "MH_RO_LABOUR",
+      "target": "MH_RO_HDR_DETAILS",
+      "source_key": "sv_ro_bill_hdr_sk",
+      "target_key": "sv_ro_bill_hdr_sk",
+      "description": "Labour to Repair Order Header"
+    },
+    {
+      "type": "one_to_many",
+      "source": "MH_CUST_VERBATIM",
+      "target": "MH_RO_HDR_DETAILS",
+      "source_key": "sv_ro_hdr_sk",
+      "target_key": "sv_ro_hdr_sk",
+      "description": "Customer Verbatim to Repair Order Header"
+    },
+    {
+      "type": "one_to_many",
+      "source": "MH_RO_PARTS",
+      "target": "MH_RO_LABOUR",
+      "source_key": "sv_ro_bill_hdr_sk",
+      "target_key": "sv_ro_bill_hdr_sk",
+      "description": "Parts to Labour via Repair Order Header"
+    },
+    {
+      "type": "one_to_many",
+      "source": "MH_RO_PARTS",
+      "target": "MH_CUST_VERBATIM",
+      "source_key": "sv_ro_bill_hdr_sk",
+      "target_key": "sv_ro_hdr_sk",
+      "description": "Parts to Customer Verbatim via Repair Order Header"
+    },
+    {
+      "type": "one_to_many",
+      "source": "MH_RO_LABOUR",
+      "target": "MH_CUST_VERBATIM",
+      "source_key": "sv_ro_bill_hdr_sk",
+      "target_key": "sv_ro_hdr_sk",
+      "description": "Labour to Customer Verbatim via Repair Order Header"
+    },
+    
+    
+    {
+      "type": "many_to_many",
+      "source": "MECHANIC_MASTER",
+      "target": "SERVICE_TASKS",
+      "through": "MECHANIC_TASK_MAPPING",
+      "source_key": "MECHANIC_ID",
+      "target_key": "TASK_ID",
+      "junction_keys": {
+        "source_fk": "MECHANIC_ID",
+        "target_fk": "TASK_ID"
+      },
+      "description": "Many mechanics can perform many service tasks (many-to-many via junction)"
+    }
+  ]
+}
