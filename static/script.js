@@ -351,10 +351,11 @@ async function sendMessage() {
             document.getElementById("sql-query-content").textContent = data.query;
             botResponse = data.chat_response || "";
         }
-        console.log("interprompt: ", data.interprompt)
-        document.getElementById("lang-prompt-content").textContent = data.langprompt;
+        console.log("interprompt: ", data.interprompt);
+        const langdata = data.langprompt.match(/template="([\s\S]*?)"\)/);
+        document.getElementById("lang-prompt-content").textContent = langdata;
         document.getElementById("interp-prompt-content").textContent = data.interprompt;
-
+        Prism.highlightElement(document.getElementById("lang-prompt-content"));
         chatMessages.innerHTML += `
             <div class="message ai-message">
                 <div class="message-content">
