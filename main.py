@@ -131,7 +131,7 @@ llm = AzureChatOpenAI(
     temperature=0
 )
 
-databases = ["GCP", "PostgreSQL-Azure", "Azure SQL"]
+databases = ["GCP", "Azure SQL"]
 question_dropdown = os.getenv('Question_dropdown')
 
 if 'messages' not in session_state:
