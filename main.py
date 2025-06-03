@@ -73,7 +73,6 @@ load_dotenv()  # Load environment variables from .env file
 app = FastAPI()
 app.add_middleware(SessionMiddleware, secret_key="your-secret-key")
 app.add_middleware(LoggingMiddleware)
-gpt_model = os.getenv('gpt_model')
 # Set up static files and templates
 templates = Jinja2Templates(directory="templates")
 app.mount("/static", StaticFiles(directory="static"), name="static")
@@ -134,7 +133,6 @@ llm = AzureChatOpenAI(
 
 databases = ["GCP", "PostgreSQL-Azure", "Azure SQL"]
 question_dropdown = os.getenv('Question_dropdown')
-# llm = ChatOpenAI(model=gpt_model, temperature=0)# Adjust model as necessary
 
 if 'messages' not in session_state:
     session_state['messages'] = []
