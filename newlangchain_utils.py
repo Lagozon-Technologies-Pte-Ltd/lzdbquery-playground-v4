@@ -81,13 +81,13 @@ from sqlalchemy.orm import sessionmaker
 
 import configure
 # os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = 'Cloud_service.json'
-db_user = os.getenv("db_user")
-db_password = os.getenv("db_password")
-db_host=os.getenv("db_host")
-#db_warehouse=os.getenv("db_warehouse")
-db_database=os.getenv("db_database")
-db_port=os.getenv("db_port")
-db_schema= os.getenv("db_schema")
+# db_user = os.getenv("db_user")
+# db_password = os.getenv("db_password")
+# db_host=os.getenv("db_host")
+# #db_warehouse=os.getenv("db_warehouse")
+# db_database=os.getenv("db_database")
+# db_port=os.getenv("db_port")
+# db_schema= os.getenv("db_schema")
 mahindra_tables =  json.loads(os.getenv("mahindra_tables"))
 
 
@@ -107,99 +107,99 @@ SQL_DATABASE_URL = (
 
 
 from sqlalchemy.exc import SQLAlchemyError
-def insert_feedback(department, user_query, sql_query, table_name, data, feedback_type="user not reacted", feedback="user not given feedback"):
-    engine = create_engine(f'postgresql+psycopg2://{quote_plus(db_user)}:{quote_plus(db_password)}@{db_host}:{db_port}/{db_database}')
-    Session = sessionmaker(bind=engine)
-    session = Session()
+# def insert_feedback(department, user_query, sql_query, table_name, data, feedback_type="user not reacted", feedback="user not given feedback"):
+#     engine = create_engine(f'postgresql+psycopg2://{quote_plus(db_user)}:{quote_plus(db_password)}@{db_host}:{db_port}/{db_database}')
+#     Session = sessionmaker(bind=engine)
+#     session = Session()
     
-    insert_query = text("""
-        INSERT INTO lz_feedbacks (department, user_query, sql_query, table_name, data, feedback_type, feedback)
-        VALUES (:department, :user_query, :sql_query, :table_name, :data, :feedback_type, :feedback)
-    """)
+#     insert_query = text("""
+#         INSERT INTO lz_feedbacks (department, user_query, sql_query, table_name, data, feedback_type, feedback)
+#         VALUES (:department, :user_query, :sql_query, :table_name, :data, :feedback_type, :feedback)
+#     """)
 
-    try:
-        session.execute(insert_query, {
-            "department": department,
-            "user_query": user_query,
-            "sql_query": sql_query,
-            "table_name": table_name,
-            "data": data,
-            "feedback_type": feedback_type,
-            "feedback": feedback
-        })
-        session.commit()
-    except Exception as e:
-        session.rollback()
-        raise e  # Propagate the exception
-    finally:
-        session.close()
+#     try:
+#         session.execute(insert_query, {
+#             "department": department,
+#             "user_query": user_query,
+#             "sql_query": sql_query,
+#             "table_name": table_name,
+#             "data": data,
+#             "feedback_type": feedback_type,
+#             "feedback": feedback
+#         })
+#         session.commit()
+#     except Exception as e:
+#         session.rollback()
+#         raise e  # Propagate the exception
+#     finally:
+#         session.close()
 
-def save_votes(table_name, votes):
-    engine = create_engine(f'postgresql+psycopg2://{quote_plus(db_user)}:{quote_plus(db_password)}@{db_host}:{db_port}/{db_database}')
-    Session = sessionmaker(bind=engine)
-    session = Session()
+# def save_votes(table_name, votes):
+#     engine = create_engine(f'postgresql+psycopg2://{quote_plus(db_user)}:{quote_plus(db_password)}@{db_host}:{db_port}/{db_database}')
+#     Session = sessionmaker(bind=engine)
+#     session = Session()
     
-    execute_query = text("""
-        INSERT INTO lz_votes (table_name, upvotes, downvotes) 
-        VALUES (:table_name, :upvotes, :downvotes)
-        ON CONFLICT (table_name) 
-        DO UPDATE SET 
-            upvotes = EXCLUDED.upvotes,
-            downvotes = EXCLUDED.downvotes
-    """)
+#     execute_query = text("""
+#         INSERT INTO lz_votes (table_name, upvotes, downvotes) 
+#         VALUES (:table_name, :upvotes, :downvotes)
+#         ON CONFLICT (table_name) 
+#         DO UPDATE SET 
+#             upvotes = EXCLUDED.upvotes,
+#             downvotes = EXCLUDED.downvotes
+#     """)
 
-    try:
-        session.execute(execute_query, {
-            "table_name": table_name,
-            "upvotes": votes["upvotes"],
-            "downvotes": votes["downvotes"]
-        })
-        session.commit()
-    except Exception as e:
-        session.rollback()
-        raise e  # Propagate the exception
-    finally:
-        session.close()
-# Create the connection string
+#     try:
+#         session.execute(execute_query, {
+#             "table_name": table_name,
+#             "upvotes": votes["upvotes"],
+#             "downvotes": votes["downvotes"]
+#         })
+#         session.commit()
+#     except Exception as e:
+#         session.rollback()
+#         raise e  # Propagate the exception
+#     finally:
+#         session.close()
+# # Create the connection string
 
-def load_votes(table_name):
-    engine = create_engine(f'postgresql+psycopg2://{quote_plus(db_user)}:{quote_plus(db_password)}@{db_host}:{db_port}/{db_database}')
-    Session = sessionmaker(bind=engine)
-    session = Session()
+# def load_votes(table_name):
+#     engine = create_engine(f'postgresql+psycopg2://{quote_plus(db_user)}:{quote_plus(db_password)}@{db_host}:{db_port}/{db_database}')
+#     Session = sessionmaker(bind=engine)
+#     session = Session()
     
-    execute_query = text("""
-        SELECT upvotes, downvotes 
-        FROM lz_votes 
-        WHERE table_name = :table_name
-    """)
+#     execute_query = text("""
+#         SELECT upvotes, downvotes 
+#         FROM lz_votes 
+#         WHERE table_name = :table_name
+#     """)
 
-    try:
-        result = session.execute(execute_query, {"table_name": table_name}).fetchone()
-        if result:
-            return {"upvotes": result[0], "downvotes": result[1]}
-        else:
-            return {"upvotes": 0, "downvotes": 0}
-    except Exception as e:
-        raise e  # Propagate the exception
-    finally:
-        session.close()
-def get_postgres_db(selected_subject, mahindra_tables):
-    print("SELECTED SUB",selected_subject,mahindra_tables)
-    try:
-        print(db_schema)
-        db = SQLDatabase.from_uri(
-            f'postgresql+psycopg2://{quote_plus(db_user)}:{quote_plus(db_password)}@{db_host}:{db_port}/{db_database}',
-            schema=db_schema,
-            include_tables=mahindra_tables,
-            view_support=True,
-            sample_rows_in_table_info=1,
-            lazy_table_reflection=True
-        )
-        print("Connection successful")
+#     try:
+#         result = session.execute(execute_query, {"table_name": table_name}).fetchone()
+#         if result:
+#             return {"upvotes": result[0], "downvotes": result[1]}
+#         else:
+#             return {"upvotes": 0, "downvotes": 0}
+#     except Exception as e:
+#         raise e  # Propagate the exception
+#     finally:
+#         session.close()
+# def get_postgres_db(selected_subject, mahindra_tables):
+#     print("SELECTED SUB",selected_subject,mahindra_tables)
+#     try:
+#         print(db_schema)
+#         db = SQLDatabase.from_uri(
+#             f'postgresql+psycopg2://{quote_plus(db_user)}:{quote_plus(db_password)}@{db_host}:{db_port}/{db_database}',
+#             schema=db_schema,
+#             include_tables=mahindra_tables,
+#             view_support=True,
+#             sample_rows_in_table_info=1,
+#             lazy_table_reflection=True
+#         )
+#         print("Connection successful")
 
-    except SQLAlchemyError as e:
-          print(f"Error connecting to the database: {e}")
-    return db
+#     except SQLAlchemyError as e:
+#           print(f"Error connecting to the database: {e}")
+#     return db
 def create_bigquery_uri(project_id, dataset_id):
     """Creates a BigQuery URI string."""
     return f"{project_id}.{dataset_id}"
@@ -423,7 +423,7 @@ def invoke_chain(question, messages, selected_model, selected_subject, selected_
         })
         print("Question:", question)
         print("Response:", response)
-        alchemyEngine = create_engine(f'postgresql+psycopg2://{quote_plus(db_user)}:{quote_plus(db_password)}@{db_host}:{db_port}/{db_database}')
+        
 
         tables_data = {}
         for table in mahindra_tables:
@@ -434,7 +434,8 @@ def invoke_chain(question, messages, selected_model, selected_subject, selected_
                 df = pd.DataFrame(result_json)  # Convert result to DataFrame
                 tables_data[table] = df
                 break
-            else:
+            elif selected_database=="PostgreSQL-Azure":
+                alchemyEngine = create_engine(f'postgresql+psycopg2://{quote_plus(db_user)}:{quote_plus(db_password)}@{db_host}:{db_port}/{db_database}')
                 with alchemyEngine.connect() as conn:
                     df = pd.read_sql(
                         sql=query,
@@ -444,7 +445,15 @@ def invoke_chain(question, messages, selected_model, selected_subject, selected_
                 tables_data[table] = df
                 print(table)
                 break
-
+            elif selected_database == "Azure SQL":
+                print("now running via azure sql")
+                result = db._engine.execute(query)  # SQLAlchemy ResultProxy
+                print("result is: ", result)
+                rows = result.fetchall()  # list of row tuples
+                columns = result.keys()   # dynamic column names
+                df = pd.DataFrame(rows, columns=columns)
+                tables_data[table] = df
+                break
         return response, mahindra_tables, tables_data, db, final_prompt
 
     except Exception as e:

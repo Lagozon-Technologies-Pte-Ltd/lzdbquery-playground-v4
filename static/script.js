@@ -352,7 +352,8 @@ async function sendMessage() {
             botResponse = data.chat_response || "";
         }
         console.log("interprompt: ", data.interprompt);
-        const langdata = data.langprompt.match(/template="([\s\S]*?)"\)/);
+        console.log("LANGprompt: ", data.langprompt);
+        const langdata = data.langprompt.match(/^([\s\S]*?)'\)\),/);
         let promptText = langdata ? langdata[1] : "Not found";
         promptText = promptText.replace(/\\n/g, '\n');
         document.getElementById("lang-prompt-content").textContent = promptText;
