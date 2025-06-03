@@ -353,7 +353,7 @@ async function sendMessage() {
         }
         console.log("interprompt: ", data.interprompt);
         console.log("LANGprompt: ", data.langprompt);
-        const langdata = data.langprompt.match(/^([\s\S]*?)'\)\),/);
+        const langdata = data.langprompt.match(/template='([\s\S]*?)'\)\),/);
         let promptText = langdata ? langdata[1] : "Not found";
         promptText = promptText.replace(/\\n/g, '\n');
         document.getElementById("lang-prompt-content").textContent = promptText;
