@@ -337,16 +337,15 @@ def get_chain(question, _messages, selected_model, selected_subject, selected_da
         input_variables=["input","top_k","table_info"],
     )
     business_glossary = get_business_glossary_text()
-    formatted_relationships = []
-    for table, rels in relationships.items():
-        for rel in rels:
-            formatted_relationships.append(
-                f"• {rel['source']}.{rel['source_key']} → {rel['target']}.{rel['target_key']} "
-                f"({rel['type'].replace('_',' ').title()})"
-            )
-    relationships_str = "\n".join(formatted_relationships) or "No relationships found"
-
     if question_type == "generic":
+        formatted_relationships = []
+        for table, rels in relationships.items():
+            for rel in rels:
+                formatted_relationships.append(
+                    f"• {rel['source']}.{rel['source_key']} → {rel['target']}.{rel['target_key']} "
+                    f"({rel['type'].replace('_',' ').title()})"
+                )
+        relationships_str = "\n".join(formatted_relationships) or "No relationships found"
 
         final_prompt1 = ChatPromptTemplate.from_messages(
             [
@@ -359,7 +358,7 @@ def get_chain(question, _messages, selected_model, selected_subject, selected_da
     elif question_type =="usecase":
         final_prompt1 = ChatPromptTemplate.from_messages(
             [
-                ("system", static_prompt.format(table_info=table_details, Business_Rule = selected_business_rule, Business_Glossary = business_glossary, relationships=relationships_str)),
+                ("system", static_prompt.format(table_info=table_details, Business_Rule = selected_business_rule, Business_Glossary = business_glossary)),
                 few_shot_prompt,
                 MessagesPlaceholder(variable_name="messages"),
                 ("human", "{input}"),
