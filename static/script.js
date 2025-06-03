@@ -946,6 +946,11 @@ function handleQuestionTypeChange(event) {
             // Clear and update tables container
             document.getElementById("tables_container").innerHTML = "";
             document.getElementById("xlsx-btn").innerHTML = ""; 
+
+            const selectedSection = document.getElementById('section-dropdown').value;
+            if (selectedSection) {
+                fetchQuestions(selectedSection);
+            }
             // Step 3: Optionally update UI or notify user
             showToastMessage("Question type changed and session reset!", 'success');
 

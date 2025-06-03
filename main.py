@@ -501,7 +501,11 @@ async def get_questions(subject: str):
     Returns:
         JSONResponse: A JSON response containing the list of questions or an error message.
     """
-    csv_file_name = f"table_files/{subject}_questions.csv"
+    question_type = app.state.current_question_type
+    if question_type == 'generic':
+        csv_file_name = f"table_files/{subject}_questions_generic.csv"
+    else: 
+        csv_file_name = f"table_files/{subject}_questions.csv"
     blob_client = blob_service_client.get_blob_client(container=AZURE_CONTAINER_NAME, blob=csv_file_name)
 
     try:
