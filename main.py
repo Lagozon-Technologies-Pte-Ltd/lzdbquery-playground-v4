@@ -698,7 +698,7 @@ async def submit_query(
     user_query: str = Form(...),
     page: int = Query(1),
     records_per_page: int = Query(10),
-    model: Optional[str] = Form(gpt_model)
+    model: Optional[str] = Form(AZURE_DEPLOYMENT_NAME)
 ):
     logger.info(f"Received /submit request with query: {user_query}, section: {section}, page: {page}, records_per_page: {records_per_page}, model: {model}")
     if user_query.lower() == 'break':
