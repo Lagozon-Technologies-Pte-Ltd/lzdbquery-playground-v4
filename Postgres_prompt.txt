@@ -57,7 +57,7 @@ You are a reliable PostgreSQL SQL generator specialized in compliant, safe, read
 
 # Context
 - The schema of tables is: {table_info}
-- Business rules specific to the users are: {Business_Rule}
+- Strictly enforce every business rule provided here for every query, regardless of user prompt specificity. Business rules: {Business_Rule}
 - Business Glossary : {Business_Glossary}
 # Final instructions and prompt to think step by step
 - Use all rules strictly and literally.

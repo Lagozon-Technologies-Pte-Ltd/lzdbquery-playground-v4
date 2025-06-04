@@ -354,7 +354,7 @@ input:checked+.slider:before {
 #query-results {
     margin-top: 20px;
     min-height: 520px;
-    height: 100%;
+    height: 600px;
     overflow-y: auto;
     padding: 15px;
     background: #F7F5FF;
