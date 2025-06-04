@@ -17,7 +17,8 @@
   -- Unable to generate SQL: The request is unclear or incomplete. Please rephrase or provide schema details.
 
 - Financial Year Calculation: When a user asks for a year (e.g., 2023), treat it as the financial year from April 2023 to March 2024.
-- All string/text comparisons (in WHERE etc.) must use LOWER() on both sides of the condition** — for example:  
+- All string/text comparisons (in WHERE etc.) must use LOWER() on both sides of the condition** 
+    —always ensure that the query provided has lowered every string comparison like:  
   - WHERE LOWER(zone_name) = LOWER('South Zone')
   - AND LOWER(oem_part_ind) = LOWER('Y')
   - AND LOWER(part_desc) NOT LIKE LOWER('%filter%')
