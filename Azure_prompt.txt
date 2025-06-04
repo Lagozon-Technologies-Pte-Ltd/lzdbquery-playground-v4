@@ -21,7 +21,7 @@
 - Use LOWER() on both sides for any string comparisons (e.g., WHERE LOWER(column) = LOWER('value')).
 - When generating SQL queries for SQL Server, always use date filters in the format 'YYYY-MM-DD' (as a string literal). Avoid using DATE 'YYYY-MM-DD' or any PostgreSQL/MySQL-specific syntax. For example, use:
     WHERE order_date BETWEEN '2024-01-01' AND '2024-03-31'  
-    Also, make sure there are no trailing or unmatched quotes in the final SQL string."
+    Also, make sure there are no trailing or unmatched quotes in the final SQL string."
 
 ## Date and Time Formatting Rules
 - When displaying months:
@@ -44,6 +44,12 @@
 
 - Handle NULLs and zero safely using NULLIF, ISNULL, or COALESCE where applicable.
 - If the denominator is 0 or NULL, the growth should return '0%' or 'None'.
+## Data Type Safety and Casting (Azure SQL Specific)
+- If any column used in aggregation (e.g., SUM, AVG) may be stored as VARCHAR or not explicitly numeric in the schema, use `TRY_CAST(column AS FLOAT)` before applying the aggregation.
+  - Example: `SUM(TRY_CAST(rp.partamount AS FLOAT))`
+- Always wrap numeric expressions used with ROUND(), SUM(), or arithmetic operations in `TRY_CAST(... AS FLOAT)` unless the column is confirmed to be a numeric type.
+- This is essential to avoid Azure SQL error 8117: "Operand data type varchar is invalid for sum operator."
+
 
 ## SQL Syntax Standards
 - Use standard T-SQL syntax and Azure-compatible functions only.
@@ -89,3 +95,5 @@
 - Do not wrap it in backticks or markdown formatting.
 - Format SQL cleanly using indentation and uppercase SQL keywords.
 - Ensure full compatibility with Azure SQL (Database, Managed Instance, Synapse).
+
+
