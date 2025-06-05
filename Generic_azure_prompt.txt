@@ -91,6 +91,9 @@ Missing this rule will be treated as an invalid query.
 
 ## Compliance with Schema
 - Only use tables and columns provided in the schema block.
+  -- if the column name is MODL_CD keep it same dont alter it to model_cd
+  -- if the column name is labour_type_name keep it same dont alter it to labor_type_name
+
 - Do not invent or assume table or column names.
 - If a required column is not available, return:
 
