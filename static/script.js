@@ -148,13 +148,13 @@ function openTab(evt, tabName) {
 // Optionally, you can set the default active tab using JavaScript:
 document.addEventListener("DOMContentLoaded", function () {
     fetch('/reset-session', { method: 'POST' })
-    .then(response => {
-        if (!response.ok) throw new Error('Session reset failed');
-        console.log('Session has been reset on page load.');
-    })
-    .catch(error => {
-        console.error('Error resetting session on page load:', error);
-    });
+        .then(response => {
+            if (!response.ok) throw new Error('Session reset failed');
+            console.log('Session has been reset on page load.');
+        })
+        .catch(error => {
+            console.error('Error resetting session on page load:', error);
+        });
 
     document.getElementsByClassName("tablinks")[0].click(); // Open the first tab by default
 });
@@ -294,9 +294,17 @@ async function sendMessage() {
     const chatMessages = document.getElementById("chat-messages");
     const typingIndicator = document.getElementById("typing-indicator");
     const queryResultsDiv = document.getElementById('query-results');
+    const tablesContainer = document.getElementById("tables_container");
+    const xlsxbtn = document.getElementById("xlsx-btn");
 
     let userMessage = userQueryInput.value.trim();
     if (!userMessage) return;
+
+    // Clear previous results
+    tablesContainer.innerHTML = "";  // Clear tables container
+    xlsxbtn.innerHTML = "";          // Clear download buttons
+    document.getElementById("sql-query-content").textContent = ""; // Clear SQL query
+    document.getElementById("user_query_display").querySelector('span').textContent = ""; // Clear user query display
 
     // Get selected database and section
     const selectedDatabase = document.getElementById('database-dropdown').value;
@@ -304,22 +312,22 @@ async function sendMessage() {
     // Get current database and section from session storage
     const currentDatabase = sessionStorage.getItem('selectedDatabase');
     const currentSection = sessionStorage.getItem('selectedSection');
+
     if (selectedDatabase && selectedDatabase !== currentDatabase) {
-        // Store the selected database in sessionStorage before reloading
         sessionStorage.setItem('selectedDatabase', selectedDatabase);
         location.reload();
         return;
     }
+
     const selectedSection = document.getElementById('section-dropdown').value;
     if ((selectedDatabase && selectedDatabase !== currentDatabase) ||
         (selectedSection && selectedSection !== currentSection)) {
-        // Store the new selections in sessionStorage
         sessionStorage.setItem('selectedDatabase', selectedDatabase);
         sessionStorage.setItem('selectedSection', selectedSection);
         location.reload();
         return;
     }
-    // Validate selection
+
     if (!selectedDatabase || !selectedSection) {
         alert("Please select both a database and a subject area");
         return;
@@ -343,15 +351,14 @@ async function sendMessage() {
         formData.append('user_query', userMessage);
         formData.append('section', selectedSection);
         formData.append('database', selectedDatabase);
-        console.log(selectedSection) // Add database to form data
-        console.log(selectedDatabase)
+
         const response = await fetch("/submit", { method: "POST", body: formData });
 
         if (!response.ok) throw new Error("Failed to fetch response");
 
         const data = await response.json();
         typingIndicator.style.display = "none";
-
+        
         let botResponse = "";
 
         if (!data.query) {
