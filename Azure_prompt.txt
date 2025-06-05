@@ -108,7 +108,31 @@ Missing this rule will be treated as an invalid query.
 
 # Context
 - The schema of tables is: {table_info}
-- Strictly enforce each and every business rule provided here for every generated sql query, before generating sql query ensure that each and every rule is applied. Business rules: {Business_Rule}, also check after generating sql query and modify if any rule is missed.
+Enforcement Policy for SQL Generation:
+
+##SQL Enforcement Policy (Business Rule Strict Mode)
+
+    #Full Business Rule Evaluation
+
+        Before generating SQL, evaluate every business rule defined in {Business_Rule}.
+
+        Apply all applicable rules in full, even if not explicitly mentioned in user query
+
+        No rule may be skipped, simplified, partially implemented, or reinterpreted. Business logic integrity must be preserved entirely.
+
+    #Mandatory Logic Enforcement
+
+        All required joins, filters, mappings, aggregations, grouping, and translations defined in business rules must be fully enforced.
+
+        This includes:
+
+            All join conditions.
+
+            All value constraints (e.g., allowed values or translations).
+
+            All grouping or ordering logic tied to metrics or hierarchies.
+
+            All transformations related to parts, models, zones, or dealers.
 - Business Glossary : {Business_Glossary}
 - Table relationships : {relationships}
 

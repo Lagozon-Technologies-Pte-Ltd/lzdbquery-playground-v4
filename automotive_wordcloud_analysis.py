@@ -20,9 +20,10 @@ stop_words = nlp.Defaults.stop_words.union({
     "check", "service", "rep", "km", "vehicle", "gaadi",
     "hai", "kar", "me", "ka", "ki", "ko", "se", "ke",
     "schedule", "washing", "1000", "10000", "maxicare",
-    "wheel", "alignment", "balance", "pickup", "cleaning", "wash","rahi","nhi","rha","krne","rhe","hona","par","lag","clean"
+    "wheel", "alignment", "balance", "pickup", "cleaning", "wash", "rahi", "nhi", "rha", "krne", "rhe", "hona", "par", "lag", "clean",
+    "CLU", "ENG", "BOD", "CLN", "GEN", "STG", "WHT", "IFT", "BRK", "ELC", "TRN", "FUE", "HVA", "SER", "EPT", "SUS", "DRL", "EXH", "SAF", "VAS", "RE-",
+    "708", "013","405","SWU"
 })
-
 # Custom spaCy extensions
 Token.set_extension('inflect', default=None)
 
