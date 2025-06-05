@@ -147,6 +147,15 @@ function openTab(evt, tabName) {
 
 // Optionally, you can set the default active tab using JavaScript:
 document.addEventListener("DOMContentLoaded", function () {
+    fetch('/reset-session', { method: 'POST' })
+    .then(response => {
+        if (!response.ok) throw new Error('Session reset failed');
+        console.log('Session has been reset on page load.');
+    })
+    .catch(error => {
+        console.error('Error resetting session on page load:', error);
+    });
+
     document.getElementsByClassName("tablinks")[0].click(); // Open the first tab by default
 });
 
@@ -209,7 +218,7 @@ function connectToDatabase(selectedDatabase) {
         sections = [
             'Mah-POC-Azure'
         ]; // Directly specify PostgreSQL sections
-    } 
+    }
     else if (selectedDatabase == 'Azure SQL') {
         sections = [
             'Azure-SQL-DB'
@@ -251,7 +260,7 @@ document.addEventListener('DOMContentLoaded', function () {
         document.getElementById('database-dropdown').value = savedDatabase;
         connectToDatabase(savedDatabase);
     }
-    
+
     if (savedSection) {
         document.getElementById('section-dropdown').value = savedSection;
         fetchQuestions(savedSection);
@@ -268,10 +277,10 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 
 // Add this to your DOMContentLoaded event listener
-document.getElementById('section-dropdown').addEventListener('change', function() {
+document.getElementById('section-dropdown').addEventListener('change', function () {
     const selectedDatabase = document.getElementById('database-dropdown').value;
     const selectedSection = this.value;
-    
+
     if (selectedDatabase && selectedSection) {
         sessionStorage.setItem('selectedDatabase', selectedDatabase);
         sessionStorage.setItem('selectedSection', selectedSection);
@@ -291,7 +300,7 @@ async function sendMessage() {
 
     // Get selected database and section
     const selectedDatabase = document.getElementById('database-dropdown').value;
-    
+
     // Get current database and section from session storage
     const currentDatabase = sessionStorage.getItem('selectedDatabase');
     const currentSection = sessionStorage.getItem('selectedSection');
@@ -302,14 +311,14 @@ async function sendMessage() {
         return;
     }
     const selectedSection = document.getElementById('section-dropdown').value;
-    if ((selectedDatabase && selectedDatabase !== currentDatabase) || 
-    (selectedSection && selectedSection !== currentSection)) {
-    // Store the new selections in sessionStorage
-    sessionStorage.setItem('selectedDatabase', selectedDatabase);
-    sessionStorage.setItem('selectedSection', selectedSection);
-    location.reload();
-    return;
-}
+    if ((selectedDatabase && selectedDatabase !== currentDatabase) ||
+        (selectedSection && selectedSection !== currentSection)) {
+        // Store the new selections in sessionStorage
+        sessionStorage.setItem('selectedDatabase', selectedDatabase);
+        sessionStorage.setItem('selectedSection', selectedSection);
+        location.reload();
+        return;
+    }
     // Validate selection
     if (!selectedDatabase || !selectedSection) {
         alert("Please select both a database and a subject area");
@@ -554,7 +563,7 @@ document.getElementById("table-dropdown")?.addEventListener("change", (event) =>
 function resetSession() {
     // Show a confirmation dialog first
     const confirmed = confirm("Are you sure you want to reset your session? This will clear all your current data.");
-    
+
     if (!confirmed) return;
 
     // Show loading state (assuming you have a way to display this)
@@ -565,7 +574,7 @@ function resetSession() {
             if (response.ok) {
                 // More friendly success message
                 showToastMessage("Session reset successfully! Refreshing your page...", 'success');
-                
+
                 // Brief delay before reload to let user see the message
                 setTimeout(() => {
                     location.reload();
@@ -734,24 +743,24 @@ function updatePageContent(data) {
     } else {
         tablesContainer.innerHTML = "<p>No tables to display.</p>";
     }
-   // Add copy button in top-right of popup
-   const copyButton = document.createElement('button');
-   copyButton.innerHTML = '<i class="fas fa-copy"></i>';
-   copyButton.className = 'copy-btn-popup';
-   copyButton.addEventListener('click', () => {
-       const sqlQueryText = document.getElementById("sql-query-content").textContent;
-       navigator.clipboard.writeText(sqlQueryText)
-           .then(() => {
-               alert('SQL query copied to clipboard!');
-           })
-           .catch(err => {
-               console.error('Failed to copy: ', err);
-               alert('Failed to copy SQL query to clipboard.');
-           });
-   });
+    // Add copy button in top-right of popup
+    const copyButton = document.createElement('button');
+    copyButton.innerHTML = '<i class="fas fa-copy"></i>';
+    copyButton.className = 'copy-btn-popup';
+    copyButton.addEventListener('click', () => {
+        const sqlQueryText = document.getElementById("sql-query-content").textContent;
+        navigator.clipboard.writeText(sqlQueryText)
+            .then(() => {
+                alert('SQL query copied to clipboard!');
+            })
+            .catch(err => {
+                console.error('Failed to copy: ', err);
+                alert('Failed to copy SQL query to clipboard.');
+            });
+    });
 
-   // Ensure this is inside the modal
-   sqlQueryContent.parentNode.appendChild(copyButton);
+    // Ensure this is inside the modal
+    sqlQueryContent.parentNode.appendChild(copyButton);
 
     // Add the "View SQL Query" button BELOW the Download Excel button
     if (data.query) {
@@ -944,7 +953,7 @@ function handleQuestionTypeChange(event) {
             // Clear chat and related UI
             document.getElementById("chat-messages").innerHTML = "";
             document.getElementById("tables_container").innerHTML = "";
-            document.getElementById("xlsx-btn").innerHTML = ""; 
+            document.getElementById("xlsx-btn").innerHTML = "";
 
             // Optionally fetch questions for the selected section
             const selectedSection = document.getElementById('section-dropdown').value;

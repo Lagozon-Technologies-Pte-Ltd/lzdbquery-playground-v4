@@ -64,6 +64,7 @@ MH_RO_LABOUR,Contains OEM and Local Labor consumed in repair orders data,totalBi
 MH_RO_LABOUR,Contains OEM and Local Labor consumed in repair orders data,labour_billable_type_name (STRING) NULLABLE: Labour Billable Type Name
 MH_RO_LABOUR,Contains OEM and Local Labor consumed in repair orders data,labour_type_name (STRING) NULLABLE: Labour Type Name
 MH_RO_LABOUR,Contains OEM and Local Labor consumed in repair orders data,labour_group_name (STRING) NULLABLE: Labour Group Name
+MH_RO_LABOUR,Contains OEM and Local Labor consumed in repair orders data,labr_code (STRING) NULLABLE: Labour Code Name
 
 MH_RO_PARTS,Contains OEM and Local Parts consumed in repair orders data,sv_ro_hdr_sk (INTEGER) NULLABLE: Service RO Header SK
 MH_RO_PARTS,Contains OEM and Local Parts consumed in repair orders data,sv_ro_bill_hdr_sk (INTEGER) NULLABLE: Service RO Bill Header SK

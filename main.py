@@ -870,7 +870,7 @@ async def submit_query(
 # Replace APIRouter with direct app.post
 
 @app.post("/reset-session")
-async def reset_session():
+async def reset_session(request: Request):
     """
     Resets the session state by clearing the session_state dictionary.
     """
@@ -878,6 +878,11 @@ async def reset_session():
     with session_lock:
         session_state.clear()
         session_state['messages'] = []
+    # Reset per-user session variables
+    request.session.clear()
+    request.session["current_question_type"] = "generic"
+    request.session["prompts"] = load_prompts("generic_prompt.yaml")
+    print("now, the que type is: ",request.session.get("current_question_type"))
     return {"message": "Session state cleared successfully"}, 200
 
 def prepare_table_html(tables_data, page, records_per_page):
