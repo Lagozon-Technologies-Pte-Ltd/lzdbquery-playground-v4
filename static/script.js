@@ -928,12 +928,11 @@ function closeinterpromptPopup() {
 // Function to handle question type change
 function handleQuestionTypeChange(event) {
     const questionType = event.target.value;
-    console.log(questionType);
-    // Step 1: Reset session first
+    document.querySelectorAll('input[name="questionType"]').forEach(radio => radio.disabled = true);
+
     fetch('/reset-session', { method: 'POST' })
         .then(response => {
             if (!response.ok) throw new Error('Session reset failed');
-            // Step 2: Now set the new question type
             return fetch('/set-question-type', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -942,23 +941,32 @@ function handleQuestionTypeChange(event) {
         })
         .then(response => response.json())
         .then(data => {
+            // Clear chat and related UI
             document.getElementById("chat-messages").innerHTML = "";
-            // Clear and update tables container
             document.getElementById("tables_container").innerHTML = "";
             document.getElementById("xlsx-btn").innerHTML = ""; 
 
+            // Optionally fetch questions for the selected section
             const selectedSection = document.getElementById('section-dropdown').value;
             if (selectedSection) {
                 fetchQuestions(selectedSection);
             }
-            // Step 3: Optionally update UI or notify user
-            showToastMessage("Question type changed and session reset!", 'success');
 
+            // Log the currently selected question type
+            const selectedType = document.querySelector('input[name="questionType"]:checked').value;
+            console.log("Selected question type after change:", selectedType); // [1][5]
+
+            showToastMessage("Question type changed and session reset!", 'success');
         })
         .catch(error => {
             showToastMessage("Could not change question type. Try again.", 'error');
+        })
+        .finally(() => {
+            document.querySelectorAll('input[name="questionType"]').forEach(radio => radio.disabled = false);
         });
 }
+
+
 
 // Attach event listeners to all radio buttons with name="questionType"
 document.querySelectorAll('input[name="questionType"]').forEach(radio => {

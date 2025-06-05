@@ -731,8 +731,8 @@ async def submit_query(
     logger.info(f"Chat history: {chat_history}")
     try:
        # **Step 1: Invoke Unified Prompt**
-        prompts = getattr(request.app.state, "prompts")
-        current_question_type = getattr(request.app.state, "current_question_type", "generic")
+        current_question_type = request.session.get("current_question_type", "generic")
+        prompts = request.session.get("prompts", load_prompts("generic_prompt.yaml"))
         logger.info(f"Selected query type: {current_question_type}")
 
         key_parameters = get_key_parameters()
@@ -1017,20 +1017,17 @@ async def get_table_data(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error generating table data: {str(e)}")
 
-current_question_type = "generic"
 
 class QuestionTypeRequest(BaseModel):
     question_type: str
 @app.post("/set-question-type")
-async def set_question_type(payload: QuestionTypeRequest, request:Request):
-    global current_question_type
+async def set_question_type(payload: QuestionTypeRequest, request: Request):
     current_question_type = payload.question_type
-
     filename = "generic_prompt.yaml" if current_question_type == "generic" else "chatbot_prompt.yaml"
     prompts = load_prompts(filename)
-    # Store prompts in app.state for global access
-    request.app.state.prompts = prompts
-    request.app.state.current_question_type = current_question_type
-    print("Received question type:", current_question_type)
+    request.session["current_question_type"] = current_question_type
+    request.session["prompts"] = prompts  # If you want to store prompts per session
 
+    print("Received question type:", current_question_type)
     return JSONResponse(content={"message": "Question type set", "prompts": prompts})
+
