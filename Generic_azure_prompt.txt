@@ -99,12 +99,32 @@ Missing this rule will be treated as an invalid query.
 
     Do not auto-correct
 
-- When grouping by a column (e.g., category, group, dealer), include COUNT(*) and STRING_AGG() where meaningful.
-- Ensure grouping columns and aggregated columns are clear and relevant to the intent.
-- Use sv_ro_bill_hdr_sk to join MH_RO_HDR_DETAILS and MH_RO_PARTS.
-- Allowed Values for Dealer Zone are ['South Zone', 'North Zone', 'East Zone', 'West Zone']. Translate natural language queries into SQL using the allowed values. When asked for Top Zone (zone_name as Dealer Zone and area_name as Dealer Area Office) with top parts consumption, use Parent Group Code, Location Code AND prodct_divsn as unique key and do the calculation. Display zone_name as Dealer ZONE, area_name as DEALER AREA OFFICE, total sum of PART_NUMBR as Total Count and total sum of partAmount as Total Value, and display in descending order of Total Count by default.\n"
-- USE sv_ro_bill_hdr_sk COLUMN TO JOIN THE TABLES MH_RO_HDR_DETAILS AND MH_RO_LABOUR.
-- Use 'sv_ro_hdr_sk' to join MH_RO_HDR_DETAILS and MH_CUST_VERBATIM.
+  - When grouping by a column (e.g., category, group, dealer), include COUNT(*) and STRING_AGG() where meaningful.
+  - Ensure grouping columns and aggregated columns are clear and relevant to the intent.
+  - Allowed Values for Dealer Zone are ['South Zone', 'North Zone', 'East Zone', 'West Zone']. Translate natural language queries into SQL using the allowed values. When asked for Top Zone (zone_name as Dealer Zone and area_name as Dealer Area Office) with top parts consumption, use Parent Group Code, Location Code AND prodct_divsn as unique key and do the calculation. Display zone_name as Dealer ZONE, area_name as DEALER AREA OFFICE, total sum of PART_NUMBR as Total Count and total sum of partAmount as Total Value, and display in descending order of Total Count by default.\n"
+  
+
+  ##MANDATORY JOIN LOGIC: Always apply the following joins exactly and without exception:
+
+    MH_RO_HDR_DETAILS.sv_ro_bill_hdr_sk = MH_RO_PARTS.sv_ro_bill_hdr_sk
+
+    MH_RO_HDR_DETAILS.sv_ro_bill_hdr_sk = MH_RO_LABOUR.sv_ro_bill_hdr_sk
+
+    MH_RO_HDR_DETAILS.sv_ro_hdr_sk = MH_CUST_VERBATIM.sv_ro_hdr_sk
+
+    NEVER SKIP A JOIN even if only one table is explicitly mentioned in the query requirement.
+
+  #INCLUDE MH_RO_HDR_DETAILS IN EVERY QUERY
+    Even if the requested fields only come from other tables (e.g., MH_CUST_VERBATIM), MH_RO_HDR_DETAILS must be present and joined using the schema-defined rules above.
+
+  #NEVER use ro_number for filtering or selection. Always use ro_id from MH_RO_HDR_DETAILS.
+
+    Apply any filtering (e.g., WHERE ro_id = ...) using MH_RO_HDR_DETAILS.ro_id only.
+  #DO NOT OMIT JOINS UNDER ANY CIRCUMSTANCE
+    No optimization, simplification, or skipping of joins is allowed. Always include the full join chain, even if not all fields are selected from each table.
+  #When filtering by oem_part_ind from MH_RO_PARTS, allow only equality comparisons to 'y' or 'n'.
+    -Comparisons must only be against 'y' or 'n'
+
 ## Glossary, Rules, and Table Info
 - Adhere to the provided business glossary, financial logic, and formatting rules.
 - Never deviate from schema structure.
