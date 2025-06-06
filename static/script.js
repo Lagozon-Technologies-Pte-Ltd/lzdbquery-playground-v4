@@ -146,7 +146,13 @@ function openTab(evt, tabName) {
 }
 
 // Optionally, you can set the default active tab using JavaScript:
-document.addEventListener("DOMContentLoaded", function () {
+// Modify the DOMContentLoaded event listener
+document.addEventListener('DOMContentLoaded', function () {
+    // Set up initial question type from session
+    const initialQuestionType = document.body.dataset.initialQuestionType || 'generic';
+    document.querySelector(`input[name="questionType"][value="${initialQuestionType}"]`).checked = true;
+
+    // Reset session on page load
     fetch('/reset-session', { method: 'POST' })
         .then(response => {
             if (!response.ok) throw new Error('Session reset failed');
@@ -156,9 +162,9 @@ document.addEventListener("DOMContentLoaded", function () {
             console.error('Error resetting session on page load:', error);
         });
 
-    document.getElementsByClassName("tablinks")[0].click(); // Open the first tab by default
+    // Set default tab
+    document.getElementsByClassName("tablinks")[0]?.click();
 });
-
 function toggleDevMode() {
     const devModeToggle = document.getElementById('devModeToggle');
     const xlsxbtn = document.getElementById('xlsx-btn'); // Excel button container
@@ -358,7 +364,7 @@ async function sendMessage() {
 
         const data = await response.json();
         typingIndicator.style.display = "none";
-        
+
         let botResponse = "";
 
         if (!data.query) {
@@ -942,47 +948,52 @@ function closeinterpromptPopup() {
 // to handle the radio button for generic and usecasebased question
 
 // Function to handle question type change
-function handleQuestionTypeChange(event) {
+async function handleQuestionTypeChange(event) {
     const questionType = event.target.value;
-    document.querySelectorAll('input[name="questionType"]').forEach(radio => radio.disabled = true);
+    const radioButtons = document.querySelectorAll('input[name="questionType"]');
 
-    fetch('/reset-session', { method: 'POST' })
-        .then(response => {
-            if (!response.ok) throw new Error('Session reset failed');
-            return fetch('/set-question-type', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ question_type: questionType })
-            });
-        })
-        .then(response => response.json())
-        .then(data => {
-            // Clear chat and related UI
-            document.getElementById("chat-messages").innerHTML = "";
-            document.getElementById("tables_container").innerHTML = "";
-            document.getElementById("xlsx-btn").innerHTML = "";
+    // Disable radios during processing
+    radioButtons.forEach(radio => radio.disabled = true);
 
-            // Optionally fetch questions for the selected section
-            const selectedSection = document.getElementById('section-dropdown').value;
-            if (selectedSection) {
-                fetchQuestions(selectedSection);
-            }
+    try {
+        // First reset the session
+        const resetResponse = await fetch('/reset-session', { method: 'POST' });
+        if (!resetResponse.ok) throw new Error('Session reset failed');
 
-            // Log the currently selected question type
-            const selectedType = document.querySelector('input[name="questionType"]:checked').value;
-            console.log("Selected question type after change:", selectedType); // [1][5]
-
-            showToastMessage("Question type changed and session reset!", 'success');
-        })
-        .catch(error => {
-            showToastMessage("Could not change question type. Try again.", 'error');
-        })
-        .finally(() => {
-            document.querySelectorAll('input[name="questionType"]').forEach(radio => radio.disabled = false);
+        // Then set the new question type
+        const typeResponse = await fetch('/set-question-type', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ question_type: questionType })
         });
+
+        if (!typeResponse.ok) throw new Error('Failed to set question type');
+
+        // Clear UI elements
+        document.getElementById("chat-messages").innerHTML = "";
+        document.getElementById("user_query_display").querySelector('span').textContent = ""; // Clear user query display
+        document.getElementById("tables_container").innerHTML = "";
+        document.getElementById("xlsx-btn").innerHTML = "";
+
+        // Refresh questions if section is selected
+        const selectedSection = document.getElementById('section-dropdown').value;
+        if (selectedSection) {
+            await fetchQuestions(selectedSection);
+        }
+
+        showToastMessage(`Switched to ${questionType} mode!`, 'success');
+    } catch (error) {
+        console.error("Error changing question type:", error);
+        // Revert to previous selection
+        event.target.checked = false;
+        const currentType = document.body.dataset.initialQuestionType || 'generic';
+        document.querySelector(`input[name="questionType"][value="${currentType}"]`).checked = true;
+        showToastMessage("Could not change question type. Try again.", 'error');
+    } finally {
+        // Re-enable radios
+        radioButtons.forEach(radio => radio.disabled = false);
+    }
 }
-
-
 
 // Attach event listeners to all radio buttons with name="questionType"
 document.querySelectorAll('input[name="questionType"]').forEach(radio => {

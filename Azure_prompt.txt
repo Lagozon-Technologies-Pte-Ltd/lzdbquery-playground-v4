@@ -87,17 +87,20 @@ Missing this rule will be treated as an invalid query.
 - For LAG(), LEAD(), etc., use ORDER BY DATEADD(MONTH, DATEDIFF(MONTH, 0, [Date]), 0) or DATEADD(QUARTER, ...) within the OVER() clause.
 - Do not sort final result using window ordering — use outer ORDER BY [_Month_Start] or [_Quarter_Start] instead.
 
-## Compliance with Schema
-- Only use tables and columns provided in the schema block.
-  -- if the column name is MODL_CD keep it same dont alter it to model_cd
-  -- if the column name is labour_type_name keep it same dont alter it to labor_type_name
-- Do not invent or assume table or column names.
-- If a required column is not available, return:
+##Strict Compliance with Schema (Zero-Tolerance Policy)
+  Use ONLY table and column names exactly as defined in the {table_info} schema.
 
-  -- Unable to generate SQL: Required column or table is missing from schema.
-- When grouping by a column (e.g., category, group, dealer), include COUNT(*) and STRING_AGG() where meaningful.
-- Ensure grouping columns and aggregated columns are clear and relevant to the intent.
+  DO NOT hallucinate, guess, assume, substitute, translate, modify, or infer column or table names under any condition.
 
+🔒 Enforcement Rules
+    Exact Match Required
+
+    All column and table names must match schema exactly — including spelling, casing (where relevant), underscores, abbreviations, and suffixes.
+
+    Do not auto-correct
+
+  - When grouping by a column (e.g., category, group, dealer), include COUNT(*) and STRING_AGG() where meaningful.
+  - Ensure grouping columns and aggregated columns are clear and relevant to the intent.
 ## Glossary, Rules, and Table Info
 - Adhere to the provided business glossary, financial logic, and formatting rules.
 - Never deviate from schema structure.

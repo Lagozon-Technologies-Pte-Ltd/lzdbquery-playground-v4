@@ -491,7 +491,7 @@ async def transcribe_audio(file: UploadFile = File(...)):
 
 @app.get("/get_questions/")
 @app.get("/get_questions")
-async def get_questions(subject: str):
+async def get_questions(subject: str, request: Request):
     """
     Fetches questions from a CSV file in Azure Blob Storage based on the selected subject.
 
@@ -501,7 +501,7 @@ async def get_questions(subject: str):
     Returns:
         JSONResponse: A JSON response containing the list of questions or an error message.
     """
-    question_type = app.state.current_question_type
+    question_type = request.session.get('current_question_type')
     if question_type == 'generic':
         csv_file_name = f"table_files/{subject}_questions_generic.csv"
     else: 
@@ -929,9 +929,9 @@ async def read_root(request: Request):
     # Extract table names dynamically
     tables = []
     # Only set defaults if not already set
-    if not hasattr(app.state, "current_question_type"):
-        app.state.current_question_type = 'generic'
-        app.state.prompts = load_prompts("generic_prompt.yaml")
+    if "current_question_type" not in request.session:
+        request.session["current_question_type"] = "generic"
+        request.session["prompts"] = load_prompts("generic_prompt.yaml")
 
     # Pass dynamically populated dropdown options to the template
     return templates.TemplateResponse("index.html", {

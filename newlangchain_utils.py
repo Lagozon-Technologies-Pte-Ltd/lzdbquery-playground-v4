@@ -447,13 +447,25 @@ def invoke_chain(question, messages, selected_model, selected_subject, selected_
                 break
             elif selected_database == "Azure SQL":
                 print("now running via azure sql")
-                result = db._engine.execute(query)  # SQLAlchemy ResultProxy
-                print("result is: ", result)
-                rows = result.fetchall()  # list of row tuples
-                columns = result.keys()   # dynamic column names
-                df = pd.DataFrame(rows, columns=columns)
-                tables_data[table] = df
+                try:
+                    result = db._engine.execute(query)
+                    print("result is: ", result)
+
+                    # Try to get keys and fetch data — handle empty result sets gracefully
+                    columns = result.keys()
+                    rows = result.fetchall()
+
+                    # Create DataFrame — will be empty if no rows
+                    df = pd.DataFrame(rows, columns=columns)
+                    print(f"Fetched {len(df)} rows.")
+                    tables_data[table] = df
+
+                except Exception as e:
+                    print("Query execution failed or no tabular result returned:", e)
+                    tables_data[table] = pd.DataFrame()  # fallback to empty DataFrame
+
                 break
+
         return response, mahindra_tables, tables_data, db, final_prompt
 
     except Exception as e:
