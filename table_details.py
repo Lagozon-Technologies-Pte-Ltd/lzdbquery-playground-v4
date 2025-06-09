@@ -24,9 +24,9 @@ llm = AzureChatOpenAI(
 )
 
 from typing import List
-# __import__('pysqlite3')
-# import sys
-# sys.modules['sqlite3'] = sys.modules.pop('pysqlite3')
+__import__('pysqlite3')
+import sys
+sys.modules['sqlite3'] = sys.modules.pop('pysqlite3')
 
 def get_table_details(selected_subject='Demo', table_name=None):
     """
