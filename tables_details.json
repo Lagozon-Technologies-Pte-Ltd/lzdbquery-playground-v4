@@ -860,25 +860,25 @@
           "column_name": "RO_GT_72",
           "data_type": "STRING",
           "nullable": true,
-          "description": "RO Greater Than 72 Hours"
+          "description": "Value of column SV_RO_HDR_SK is stored in this column for those ROs where it took more than 72 hours for repair"
         },
         {
           "column_name": "RO_LT_ET_72",
           "data_type": "STRING",
           "nullable": true,
-          "description": "RO Less Than or Equal To 72 Hours"
+          "description": "Value of column SV_RO_HDR_SK is stored in this column for those ROs where it took less Than or equal to 72 hours for repair"
         },
         {
           "column_name": "RO_LT_ET_48",
           "data_type": "STRING",
           "nullable": true,
-          "description": "RO Less Than or Equal To 48 Hours"
+          "description": "Value of column SV_RO_HDR_SK is stored in this column for those ROs where it took less Than or equal to 48 hours for repair"
         },
         {
           "column_name": "RO_LT_ET_24",
           "data_type": "STRING",
           "nullable": true,
-          "description": "RO Less Than or Equal To 24 Hours"
+          "description": "Value of column SV_RO_HDR_SK is stored in this column for those ROs where it took less Than or equal to 24 hours for repair"
         },
         {
           "column_name": "RO_CLOSE_DIFF",
