@@ -125,7 +125,15 @@
 },
 {
     "input": "how many ROs took more than 72 hours to repair.",
-    "query": "SELECT COUNT( RO_GT_72) AS \"RO_COUNT\" FROM MH_RO_HDR_DETAILS HDR WHERE LOWER(HDR.RO_GT_72) <> 0;"
+    "query": "SELECT COUNT(DISTINCT SV_RO_HDR_SK) AS RO_Count_Over_72_Hours FROM MH_RO_HDR_DETAILS WHERE RO_GT_72 <>0;"
+},
+{
+    "input": "List all ROs which took Less than or equal to 48 hours to repair",
+    "query": "SELECT DISTINCT RO_ID FROM MH_RO_HDR_DETAILS WHERE RO_LT_ET_48 <> 0 ;"
+},
+{
+    "input":"List all ROs which took Less than or equal to 24 hours to repair",
+    "query":"SELECT DISTINCT RO_ID FROM MH_RO_HDR_DETAILS WHERE RO_LT_ET_24 <> 0"
 }
 
 ]
