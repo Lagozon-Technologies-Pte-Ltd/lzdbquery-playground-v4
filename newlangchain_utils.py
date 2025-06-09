@@ -206,7 +206,7 @@ def create_bigquery_uri(project_id, dataset_id):
 
 
 class BigQuerySQLDatabase(SQLDatabase):
-    def __init__(self):
+    def _init_(self):
         try:
             # Create credentials dictionary from environment variables
             credentials_info = {
@@ -284,7 +284,7 @@ def get_sql_db(selected_subject, mahindra_tables):
             SQL_DATABASE_URL,
             pool_size=SQL_POOL_SIZE,
             max_overflow=SQL_MAX_OVERFLOW,
-            echo=True  # Set to False in production
+            echo=False  # Set to False in production
         )
 
         print("Connection successful")
@@ -336,6 +336,7 @@ def get_chain(question, _messages, selected_model, selected_subject, selected_da
         example_selector=get_example_selector("sql_query_examples.json"),
         input_variables=["input","top_k","table_info"],
     )
+    
     business_glossary = get_business_glossary_text()
     formatted_relationships = []
     for table, rels in relationships.items():
@@ -345,8 +346,12 @@ def get_chain(question, _messages, selected_model, selected_subject, selected_da
                 f"({rel['type'].replace('_',' ').title()})"
             )
     relationships_str = "\n".join(formatted_relationships) or "No relationships found"
-
+    
+    # print("Few shot prompt : " , few_shot_prompt.invoke({{"input": "List all parts used in a particular repair order RO22A002529",
+    # "top_k": "2", "table_info":""}}))
+    
     if question_type == "generic":
+        
 
         final_prompt1 = ChatPromptTemplate.from_messages(
             [
@@ -383,10 +388,10 @@ def get_chain(question, _messages, selected_model, selected_subject, selected_da
 
     # Override QuerySQLDataBaseTool validation
     class CustomQuerySQLDatabaseTool(QuerySQLDataBaseTool):
-        def __init__(self, db):
+        def _init_(self, db):
             if not isinstance(db, SQLDatabase):
                 raise ValueError("db must be an instance of SQLDatabase")
-            super().__init__(db=db)
+            super()._init_(db=db)
 
     execute_query = CustomQuerySQLDatabaseTool(db=db)
     
@@ -417,7 +422,7 @@ def invoke_chain(question, messages, selected_model, selected_subject, selected_
 
         response = chain.invoke({
             "question": question,           # <-- Correct key
-            "top_k": 3,
+            "top_k": 1,  #changed from 3 to 1
             "messages": history.messages,
             "table_details": table_info  # <-- Required by your prompt
         })
@@ -447,25 +452,13 @@ def invoke_chain(question, messages, selected_model, selected_subject, selected_
                 break
             elif selected_database == "Azure SQL":
                 print("now running via azure sql")
-                try:
-                    result = db._engine.execute(query)
-                    print("result is: ", result)
-
-                    # Try to get keys and fetch data — handle empty result sets gracefully
-                    columns = result.keys()
-                    rows = result.fetchall()
-
-                    # Create DataFrame — will be empty if no rows
-                    df = pd.DataFrame(rows, columns=columns)
-                    print(f"Fetched {len(df)} rows.")
-                    tables_data[table] = df
-
-                except Exception as e:
-                    print("Query execution failed or no tabular result returned:", e)
-                    tables_data[table] = pd.DataFrame()  # fallback to empty DataFrame
-
+                result = db._engine.execute(query)  # SQLAlchemy ResultProxy
+                print("result is: ", result)
+                rows = result.fetchall()  # list of row tuples
+                columns = result.keys()   # dynamic column names
+                df = pd.DataFrame(rows, columns=columns)
+                tables_data[table] = df
                 break
-
         return response, mahindra_tables, tables_data, db, final_prompt
 
     except Exception as e:

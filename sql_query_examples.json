@@ -46,5 +46,86 @@
     {
         "input": "Generate a SQL query to retrieve the list of Top 10 consumed OEM parts under the \"Bodyshop\" category for the period from 01-Jan-2024 to 31-Dec-2024.",
         "query": "SELECT rp.part_code AS \"Part Code\", rp.part_desc AS \"Part Description\", ROUND(SUM(rp.part_quantity), 1) AS \"Total Count\", ROUND(SUM(rp.partamount), 1) AS \"Total Value\" FROM MH_RO_PARTS rp JOIN MH_RO_HDR_DETAILS rhd ON rp.sv_ro_bill_hdr_sk = rhd.sv_ro_bill_hdr_sk WHERE LOWER(rhd.serv_catgry_desc) = LOWER('Bodyshop') AND LOWER(rhd.service_group) = LOWER('Bodyshop') AND rp.oem_part_ind = 'Y' AND rhd.ro_bill_date BETWEEN DATE '2024-01-01' AND DATE '2024-12-31' GROUP BY rp.part_code, rp.part_desc ORDER BY \"Total Value\" DESC LIMIT 10;"
-    }
+    },
+    {
+        "input": "List all parts used in a particular repair order RO22A002529",
+        "query": "SELECT rp.part_desc , rp.part_code  FROM MH_RO_PARTS  rp  inner join  MH_RO_HDR_DETAILS  rohdr on (rp.SV_RO_HDR_SK = rohdr.SV_RO_HDR_SK ) WHERE LOWER(rohdr.ro_id) = LOWER('RO22A002529');;"
+    },
+    {
+        "input": "List model descriptions and fuel types for all repair orders raised in 2024 with active models only.",
+        "query": "SELECT mm.MODL_DESC, mm.FUEL_TYPE FROM MH_RO_HDR_DETAILS rohdr INNER JOIN MH_MODEL_MASTER mm ON rohdr.MODL_CD = mm.MODL_CD WHERE rohdr.RO_DATE BETWEEN '2024-01-01' AND '2024-12-31' AND LOWER(mm.ACTV_IND) = 'y';"
+    },
+    {
+    "input": "List dealer names and locations for repair orders where the product division is 'PASSENGER VEHICLE'.",
+    "query": "SELECT ad.delr_name, ad.loctn_name FROM MH_RO_HDR_DETAILS rohdr INNER JOIN MH_AD_AI_DIMENSION ad ON rohdr.LOCTN_CD = ad.loctn_cd WHERE rohdr.PRODCT_DIVSN = 'PASSENGER VEHICLE';"
+    },
+    {
+    "input": "Get all customer verbatim feedback and group descriptions for RO IDs that were canceled.",
+    "query": "SELECT cv.cust_verbtm_desc, cv.verbatim_group_desc FROM MH_RO_HDR_DETAILS rohdr INNER JOIN MH_CUST_VERBATIM cv ON rohdr.SV_RO_HDR_SK = cv.sv_ro_hdr_sk WHERE rohdr.RO_STATS = 'Cancelled';"
+    },
+    {
+    "input": "Get labour descriptions and total amounts for repair orders where labour hours exceed 4 and RO is not cancelled.",
+    "query": "SELECT rl.labr_desc, rl.labr_totl_amnt FROM MH_RO_HDR_DETAILS rohdr INNER JOIN MH_RO_LABOUR rl ON rohdr.SV_RO_HDR_SK = rl.sv_ro_hdr_sk WHERE rl.labr_charg_hrs > 4 AND rohdr.RO_STATS != 'Cancelled';"
+    },
+    {
+    "input": "Show part descriptions and quantities for RO IDs where parts discount exceeded 200.",
+    "query": "SELECT rp.part_desc, rp.part_quantity FROM MH_RO_HDR_DETAILS rohdr INNER JOIN MH_RO_PARTS rp ON rohdr.SV_RO_HDR_SK = rp.sv_ro_hdr_sk WHERE rp.part_discnt_amnt > 200;"
+    },
+    {
+    "input": "What is the total labour consumption for each vehicle model, month by month, during the financial year 2024?",
+    "query": "SELECT rohdr.MODL_CD, TO_CHAR(rohdr.RO_DATE, 'YYYY-MM') AS month, SUM(rl.labr_totl_amnt) AS total_labour_consumption FROM MH_RO_HDR_DETAILS rohdr INNER JOIN MH_RO_LABOUR rl ON rohdr.SV_RO_HDR_SK = rl.sv_ro_hdr_sk WHERE rohdr.RO_DATE BETWEEN '2023-04-01' AND '2024-03-31' GROUP BY rohdr.MODL_CD, TO_CHAR(rohdr.RO_DATE, 'YYYY-MM') ORDER BY rohdr.MODL_CD, month;"
+    },
+    {
+    "input": "Analyze the distribution of transmission types across different vehicle segments and their impact on average labor costs per repair order.",
+    "query": "SELECT mm.SEGMNT_CD, mm.TRANSMISSION, COUNT(*) AS repair_count, ROUND(AVG(TRY_CAST(rl.labr_totl_amnt AS FLOAT)), 1) AS avg_labor_cost, PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY TRY_CAST(rl.labr_totl_amnt AS FLOAT)) AS median_labor_cost FROM MH_MODEL_MASTER mm JOIN MH_RO_HDR_DETAILS roh ON mm.MODL_CD = roh.MODL_CD JOIN MH_RO_LABOUR rl ON roh.SV_RO_HDR_SK = rl.sv_ro_hdr_sk GROUP BY mm.SEGMNT_CD, mm.TRANSMISSION ORDER BY mm.SEGMNT_CD, avg_labor_cost DESC;"
+},
+{
+    "input": "What are the top 5 vehicle models by seat capacity that have the highest average repair order amounts, and how do they compare across different fuel types?",
+    "query": "SELECT TOP 5 mm.MODL_CD, mm.MODL_DESC, mm.SEAT_CAPCTY, mm.FUEL_TYPE, ROUND(AVG(TRY_CAST(roh.PARTS_TOTL_AMNT AS FLOAT) + TRY_CAST(roh.LABR_TOTL_AMNT AS FLOAT)), 1) AS avg_repair_amount FROM MH_MODEL_MASTER mm JOIN MH_RO_HDR_DETAILS roh ON mm.MODL_CD = roh.MODL_CD GROUP BY mm.MODL_CD, mm.MODL_DESC, mm.SEAT_CAPCTY, mm.FUEL_TYPE ORDER BY mm.SEAT_CAPCTY DESC, avg_repair_amount DESC;"
+},
+{
+    "input": "Which dealer locations (with latitude/longitude) have the highest number of repeat repairs for electric vehicles, segmented by zone?",
+    "query": "SELECT ad.loctn_name, ad.loctn_cd, ad.longtitude, ad.lattitude, ad.zone_name, COUNT(*) AS repeat_repair_count FROM MH_AD_AI_DIMENSION ad JOIN MH_RO_HDR_DETAILS roh ON ad.loctn_cd = roh.LOCTN_CD JOIN MH_MODEL_MASTER mm ON roh.MODL_CD = mm.MODL_CD WHERE LOWER(roh.repeat_repair_flag) = LOWER('Y') AND LOWER(mm.FUEL_TYPE) LIKE LOWER('%electric%') GROUP BY ad.loctn_name, ad.loctn_cd, ad.longtitude, ad.lattitude, ad.zone_name ORDER BY repeat_repair_count DESC;"
+},
+{
+    "input": "Analyze dealer performance by zone showing average repair order value, parts to labor ratio, and customer verbatim sentiment scores.",
+    "query": "SELECT ad.zone_name, COUNT(DISTINCT roh.RO_ID) AS repair_count, ROUND(AVG(TRY_CAST(roh.PARTS_TOTL_AMNT AS FLOAT) + TRY_CAST(roh.LABR_TOTL_AMNT AS FLOAT)), 1) AS avg_ro_value, ROUND(SUM(TRY_CAST(roh.PARTS_TOTL_AMNT AS FLOAT)) / NULLIF(SUM(TRY_CAST(roh.LABR_TOTL_AMNT AS FLOAT)), 0), 2) AS parts_to_labor_ratio, STRING_AGG(LOWER(cv.verbatim_group_desc), ', ') AS common_verbatims FROM MH_AD_AI_DIMENSION ad JOIN MH_RO_HDR_DETAILS roh ON ad.loctn_cd = roh.LOCTN_CD LEFT JOIN MH_CUST_VERBATIM cv ON roh.SV_RO_HDR_SK = cv.sv_ro_hdr_sk WHERE roh.RO_DATE BETWEEN '2023-04-01' AND '2024-03-31' GROUP BY ad.zone_name ORDER BY avg_ro_value DESC;"
+},
+{
+    "input": "What is the trend of warranty vs paid repairs by vehicle segment over the last 3 financial years, showing month-over-month comparison?",
+    "query": "SELECT mm.SEGMNT_CD, FORMAT(DATEADD(MONTH, DATEDIFF(MONTH, 0, roh.RO_DATE), 0), 'MMM-yy') AS month, DATEADD(MONTH, DATEDIFF(MONTH, 0, roh.RO_DATE), 0) AS _Month_Start, SUM(CASE WHEN LOWER(roh.Warranty_Flag) = LOWER('Y') THEN 1 ELSE 0 END) AS warranty_count, SUM(CASE WHEN LOWER(roh.Warranty_Flag) = LOWER('N') THEN 1 ELSE 0 END) AS paid_count FROM MH_RO_HDR_DETAILS roh JOIN MH_MODEL_MASTER mm ON roh.MODL_CD = mm.MODL_CD WHERE roh.RO_DATE BETWEEN DATEADD(YEAR, -3, '2023-04-01') AND '2024-03-31' GROUP BY mm.SEGMNT_CD, FORMAT(DATEADD(MONTH, DATEDIFF(MONTH, 0, roh.RO_DATE), 0), 'MMM-yy'), DATEADD(MONTH, DATEDIFF(MONTH, 0, roh.RO_DATE), 0) ORDER BY mm.SEGMNT_CD, _Month_Start;"
+},
+{
+    "input": "Analyze the correlation between vehicle age (from warranty start date) and repair costs, segmented by model group and fuel type.",
+    "query": "SELECT mm.MODL_GROP_CD, mm.MODL_GROP_DESC, mm.FUEL_TYPE, DATEDIFF(MONTH, roh.ORGNL_WARNTY_START_DATE, roh.RO_DATE)/12 AS vehicle_age_years, COUNT(*) AS repair_count, ROUND(AVG(TRY_CAST(roh.PARTS_TOTL_AMNT AS FLOAT) + TRY_CAST(roh.LABR_TOTL_AMNT AS FLOAT)), 1) AS avg_repair_cost FROM MH_RO_HDR_DETAILS roh JOIN MH_MODEL_MASTER mm ON roh.MODL_CD = mm.MODL_CD WHERE roh.ORGNL_WARNTY_START_DATE IS NOT NULL GROUP BY mm.MODL_GROP_CD, mm.MODL_GROP_DESC, mm.FUEL_TYPE, DATEDIFF(MONTH, roh.ORGNL_WARNTY_START_DATE, roh.RO_DATE)/12 ORDER BY mm.MODL_GROP_CD, vehicle_age_years;"
+},
+{
+    "input": "What are the most common customer complaint categories by vehicle segment and model group, with sentiment analysis?",
+    "query": "SELECT mm.SEGMNT_CD, mm.MODL_GROP_CD, mm.MODL_GROP_DESC, cv.verbatim_group, COUNT(*) AS complaint_count, STRING_AGG(LOWER(cv.cust_verbtm_desc), ' | ') AS sample_complaints FROM MH_CUST_VERBATIM cv JOIN MH_RO_HDR_DETAILS roh ON cv.sv_ro_hdr_sk = roh.SV_RO_HDR_SK JOIN MH_MODEL_MASTER mm ON roh.MODL_CD = mm.MODL_CD GROUP BY mm.SEGMNT_CD, mm.MODL_GROP_CD, mm.MODL_GROP_DESC, cv.verbatim_group ORDER BY complaint_count DESC;"
+},
+{
+    "input": "Analyze the relationship between customer verbatim sentiment and repair order value by dealer zone.",
+    "query": "SELECT ad.zone_name, cv.verbatim_group, COUNT(*) AS case_count, ROUND(AVG(TRY_CAST(roh.PARTS_TOTL_AMNT AS FLOAT) + TRY_CAST(roh.LABR_TOTL_AMNT AS FLOAT)), 1) AS avg_ro_value FROM MH_CUST_VERBATIM cv JOIN MH_RO_HDR_DETAILS roh ON cv.sv_ro_hdr_sk = roh.SV_RO_HDR_SK JOIN MH_AD_AI_DIMENSION ad ON roh.LOCTN_CD = ad.loctn_cd GROUP BY ad.zone_name, cv.verbatim_group ORDER BY ad.zone_name, case_count DESC;"
+},
+{
+    "input": "What is the breakdown of labor types by model group and their contribution to total repair costs?",
+    "query": "SELECT mm.MODL_GROP_CD, mm.MODL_GROP_DESC, rl.labour_type_name, COUNT(*) AS labor_count, ROUND(SUM(TRY_CAST(rl.labr_totl_amnt AS FLOAT)), 1) AS total_labor_cost, ROUND(SUM(TRY_CAST(rl.labr_totl_amnt AS FLOAT)) * 100.0 / SUM(SUM(TRY_CAST(rl.labr_totl_amnt AS FLOAT)) OVER (PARTITION BY mm.MODL_GROP_CD), 1) AS percentage_of_total FROM MH_RO_LABOUR rl JOIN MH_RO_HDR_DETAILS roh ON rl.sv_ro_hdr_sk = roh.SV_RO_HDR_SK JOIN MH_MODEL_MASTER mm ON roh.MODL_CD = mm.MODL_CD GROUP BY mm.MODL_GROP_CD, mm.MODL_GROP_DESC, rl.labour_type_name ORDER BY mm.MODL_GROP_CD, total_labor_cost DESC;"
+},
+{
+    "input": "Analyze the trend of standard vs. overtime labor hours by month for each product division.",
+    "query": "SELECT roh.PRODCT_DIVSN, FORMAT(DATEADD(MONTH, DATEDIFF(MONTH, 0, roh.RO_DATE), 0), 'MMM-yy') AS month, DATEADD(MONTH, DATEDIFF(MONTH, 0, roh.RO_DATE), 0) AS _Month_Start, SUM(CASE WHEN LOWER(rl.labour_type_name) LIKE LOWER('%standard%') THEN TRY_CAST(rl.standrd_hrs AS FLOAT) ELSE 0 END) AS standard_hours, SUM(CASE WHEN LOWER(rl.labour_type_name) LIKE LOWER('%overtime%') THEN TRY_CAST(rl.standrd_hrs AS FLOAT) ELSE 0 END) AS overtime_hours FROM MH_RO_LABOUR rl JOIN MH_RO_HDR_DETAILS roh ON rl.sv_ro_hdr_sk = roh.SV_RO_HDR_SK WHERE roh.RO_DATE BETWEEN '2023-04-01' AND '2024-03-31' GROUP BY roh.PRODCT_DIVSN, FORMAT(DATEADD(MONTH, DATEDIFF(MONTH, 0, roh.RO_DATE), 0), 'MMM-yy'), DATEADD(MONTH, DATEDIFF(MONTH, 0, roh.RO_DATE), 0) ORDER BY roh.PRODCT_DIVSN, _Month_Start;"
+},
+{
+    "input": "What is the parts consumption pattern by category for electric vs. ICE vehicles, showing OEM vs. aftermarket parts usage?",
+    "query": "SELECT mm.FUEL_TYPE, rp.part_category_group, COUNT(*) AS part_count, SUM(TRY_CAST(rp.part_quantity AS FLOAT)) AS total_quantity, ROUND(SUM(TRY_CAST(rp.part_totl_amnt AS FLOAT)), 1) AS total_value, SUM(CASE WHEN LOWER(rp.oem_part_ind) = LOWER('Y') THEN 1 ELSE 0 END) AS oem_parts, SUM(CASE WHEN LOWER(rp.oem_part_ind) = LOWER('N') THEN 1 ELSE 0 END) AS aftermarket_parts FROM MH_RO_PARTS rp JOIN MH_RO_HDR_DETAILS roh ON rp.sv_ro_hdr_sk = roh.SV_RO_HDR_SK JOIN MH_MODEL_MASTER mm ON roh.MODL_CD = mm.MODL_CD GROUP BY mm.FUEL_TYPE, rp.part_category_group ORDER BY mm.FUEL_TYPE, total_value DESC;"
+},
+{
+    "input": "Analyze the price variance between MRP and dealer purchase price for top 20 most used parts across all repairs.",
+    "query": "SELECT TOP 20 rp.part_code, rp.part_desc, COUNT(*) AS usage_count, ROUND(AVG(TRY_CAST(rp.mrp AS FLOAT)), 1) AS avg_mrp, ROUND(AVG(TRY_CAST(rp.purchs_pric AS FLOAT)), 1) AS avg_purchase_price, ROUND(AVG(TRY_CAST(rp.mrp AS FLOAT) - TRY_CAST(rp.purchs_pric AS FLOAT)), 1) AS avg_price_variance, ROUND((AVG(TRY_CAST(rp.mrp AS FLOAT) - TRY_CAST(rp.purchs_pric AS FLOAT)) * 100.0 / NULLIF(AVG(TRY_CAST(rp.purchs_pric AS FLOAT)), 0), 1) AS percentage_variance FROM MH_RO_PARTS rp JOIN MH_RO_HDR_DETAILS roh ON rp.sv_ro_hdr_sk = roh.SV_RO_HDR_SK GROUP BY rp.part_code, rp.part_desc ORDER BY usage_count DESC;"
+},
+{
+    "input": "how many ROs took more than 72 hours to repair.",
+    "query": "SELECT COUNT( RO_GT_72) AS \"RO_COUNT\" FROM MH_RO_HDR_DETAILS HDR WHERE LOWER(HDR.RO_GT_72) <> 0;"
+}
+
 ]
