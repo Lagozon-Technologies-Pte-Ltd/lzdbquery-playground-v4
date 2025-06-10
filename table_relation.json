@@ -6,7 +6,7 @@
       "target": "MH_RO_HDR_DETAILS",
       "source_key": "MODL_CD",
       "target_key": "MODL_CD",
-      "description": "Model Master to Repair Order Header Details"
+      "description": "Model Master to Repair Order or RO Header Details"
     },
     {
       "type": "one_to_many",
@@ -14,7 +14,7 @@
       "target": "MH_RO_HDR_DETAILS",
       "source_key":  ["parnt_grop", "loctn_cd", "prodct_divsn"],
       "target_key": ["DIV_KEY"],
-      "description": "Dealer Master to Repair Order Header Details (composite key)"
+      "description": "Dealer Master to Repair Order or RO Header Details (composite key)"
     },
     {
       "type": "one_to_many",
@@ -22,7 +22,7 @@
       "target": "MH_RO_PARTS",
       "source_key": "sv_ro_bill_hdr_sk",
       "target_key": "sv_ro_bill_hdr_sk",
-      "description": "Repair Order Header to Parts"
+      "description": "Repair Order or RO Header to Parts"
     },
     {
       "type": "one_to_many",
@@ -30,7 +30,7 @@
       "target": "MH_RO_LABOUR",
       "source_key": "sv_ro_bill_hdr_sk",
       "target_key": "sv_ro_bill_hdr_sk",
-      "description": "Repair Order Header to Labour"
+      "description": "Repair Order or RO Header to Labour"
     },
     {
       "type": "one_to_many",
@@ -38,32 +38,7 @@
       "target": "MH_CUST_VERBATIM",
       "source_key": "sv_ro_hdr_sk",
       "target_key": "sv_ro_hdr_sk",
-      "description": "Repair Order Header to Customer Verbatim"
-    },
-
-    {
-      "type": "one_to_many",
-      "source": "MH_RO_PARTS",
-      "target": "MH_RO_LABOUR",
-      "source_key": "sv_ro_bill_hdr_sk",
-      "target_key": "sv_ro_bill_hdr_sk",
-      "description": "Parts to Labour via Repair Order Header"
-    },
-    {
-      "type": "one_to_many",
-      "source": "MH_RO_PARTS",
-      "target": "MH_CUST_VERBATIM",
-      "source_key": "sv_ro_bill_hdr_sk",
-      "target_key": "sv_ro_hdr_sk",
-      "description": "Parts to Customer Verbatim via Repair Order Header"
-    },
-    {
-      "type": "one_to_many",
-      "source": "MH_RO_LABOUR",
-      "target": "MH_CUST_VERBATIM",
-      "source_key": "sv_ro_bill_hdr_sk",
-      "target_key": "sv_ro_hdr_sk",
-      "description": "Labour to Customer Verbatim via Repair Order Header"
+      "description": "Repair Order or RO Header to Customer Verbatim"
     }
   ]
 }

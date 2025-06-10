@@ -48,15 +48,15 @@
         "query": "SELECT rp.part_code AS \"Part Code\", rp.part_desc AS \"Part Description\", ROUND(SUM(rp.part_quantity), 1) AS \"Total Count\", ROUND(SUM(rp.partamount), 1) AS \"Total Value\" FROM MH_RO_PARTS rp JOIN MH_RO_HDR_DETAILS rhd ON rp.sv_ro_bill_hdr_sk = rhd.sv_ro_bill_hdr_sk WHERE LOWER(rhd.serv_catgry_desc) = LOWER('Bodyshop') AND LOWER(rhd.service_group) = LOWER('Bodyshop') AND rp.oem_part_ind = 'Y' AND rhd.ro_bill_date BETWEEN DATE '2024-01-01' AND DATE '2024-12-31' GROUP BY rp.part_code, rp.part_desc ORDER BY \"Total Value\" DESC LIMIT 10;"
     },
     {
-        "input": "List all parts used in a particular repair order RO22A002529",
-        "query": "SELECT rp.part_desc , rp.part_code  FROM MH_RO_PARTS  rp  inner join  MH_RO_HDR_DETAILS  rohdr on (rp.SV_RO_HDR_SK = rohdr.SV_RO_HDR_SK ) WHERE LOWER(rohdr.ro_id) = LOWER('RO22A002529');;"
+        "input": "List all parts used in a particular repair order RO25D000730",
+        "query": "SELECT rp.part_desc , rp.part_code  FROM MH_RO_PARTS  rp  inner join  MH_RO_HDR_DETAILS  rohdr on (rp.SV_RO_HDR_SK = rohdr.SV_RO_HDR_SK ) WHERE LOWER(rohdr.ro_id) = LOWER('RO25D000730');;"
     },
     {
         "input": "List model descriptions and fuel types for all repair orders raised in 2024 with active models only.",
         "query": "SELECT mm.MODL_DESC, mm.FUEL_TYPE FROM MH_RO_HDR_DETAILS rohdr INNER JOIN MH_MODEL_MASTER mm ON rohdr.MODL_CD = mm.MODL_CD WHERE rohdr.RO_DATE BETWEEN '2024-01-01' AND '2024-12-31' AND LOWER(mm.ACTV_IND) = 'y';"
     },
     {
-    "input": "List dealer names and locations for repair orders where the product division is 'PASSENGER VEHICLE'.",
+    "input": "List dealer names and locations for repair orders or ROs where the product division is 'PASSENGER VEHICLE'.",
     "query": "SELECT ad.delr_name, ad.loctn_name FROM MH_RO_HDR_DETAILS rohdr INNER JOIN MH_AD_AI_DIMENSION ad ON rohdr.LOCTN_CD = ad.loctn_cd WHERE rohdr.PRODCT_DIVSN = 'PASSENGER VEHICLE';"
     },
     {
@@ -64,7 +64,7 @@
     "query": "SELECT cv.cust_verbtm_desc, cv.verbatim_group_desc FROM MH_RO_HDR_DETAILS rohdr INNER JOIN MH_CUST_VERBATIM cv ON rohdr.SV_RO_HDR_SK = cv.sv_ro_hdr_sk WHERE rohdr.RO_STATS = 'Cancelled';"
     },
     {
-    "input": "Get labour descriptions and total amounts for repair orders where labour hours exceed 4 and RO is not cancelled.",
+    "input": "Get labour descriptions and total amounts for repair orders or ROs where labour hours exceed 4 and RO is not cancelled.",
     "query": "SELECT rl.labr_desc, rl.labr_totl_amnt FROM MH_RO_HDR_DETAILS rohdr INNER JOIN MH_RO_LABOUR rl ON rohdr.SV_RO_HDR_SK = rl.sv_ro_hdr_sk WHERE rl.labr_charg_hrs > 4 AND rohdr.RO_STATS != 'Cancelled';"
     },
     {
@@ -134,6 +134,17 @@
 {
     "input":"List all ROs which took Less than or equal to 24 hours to repair",
     "query":"SELECT DISTINCT RO_ID FROM MH_RO_HDR_DETAILS WHERE RO_LT_ET_24 <> 0"
+},
+{
+    "input":"Give the total parts amount billed for RO RO25D000730",
+    "query":"SELECT ROUND(SUM(TRY_CAST(rohdr.PARTS_TOTL_AMNT AS FLOAT)), 1) AS Total_Parts_Amount_Billed FROM MH_RO_HDR_DETAILS rohdr WHERE LOWER(rohdr.ro_id) = LOWER('RO25D000730')"
+},
+{
+    "input":"Give the total Labour amount billed for RO RO25D000730",
+    "query":"SELECT ROUND(SUM(TRY_CAST(rohdr.LABR_TOTL_AMNT AS FLOAT)), 1) AS Total_Labour_Amount_Billed FROM MH_RO_HDR_DETAILS rohdr WHERE LOWER(rohdr.ro_id) = LOWER('RO25D000730')"
+},
+{
+    "input":"Give the total  amount billed for RO RO25D000730",
+    "query":"SELECT ROUND(SUM(TRY_CAST(rohdr.PARTS_TOTL_AMNT AS FLOAT)), 1) + ROUND(SUM(TRY_CAST(rohdr.LABR_TOTL_AMNT AS FLOAT)), 1) AS Total_Amount_Billed FROM MH_RO_HDR_DETAILS rohdr WHERE LOWER(rohdr.ro_id) = LOWER('RO25D000730')"
 }
-
 ]
