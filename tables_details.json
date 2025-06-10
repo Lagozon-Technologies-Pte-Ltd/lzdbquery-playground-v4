@@ -1232,7 +1232,7 @@
           "column_name": "taxi_indicator",
           "data_type": "STRING",
           "nullable": true,
-          "description": "Taxi Indicator"
+          "description": "This column indicates if the vehicle under given RO or Repair Order is a Taxi or not. It contains the value as NON TAXI AND TAXI"
         },
         {
           "column_name": "bay_type_name",
