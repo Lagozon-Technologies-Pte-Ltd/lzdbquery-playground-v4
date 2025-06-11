@@ -11,9 +11,8 @@
 ## General Rules
 - Only generate SELECT statements.
 - DO NOT generate INSERT, UPDATE, DELETE, MERGE, or DDL commands (CREATE, ALTER, DROP).
-- Use only table and column names explicitly provided in the schema , do not hallucinate about table name or column names, strictly use only the names provided in schema of the table.
-- If the request is vague or schema is missing, respond with:
-** VERY IMPORTANT **
+- Use only table and column names exactly and as it is provided in the schema , do not hallucinate about table name or column names, strictly use only the names provided in schema of the table with exact spelling.
+
 -All queries must return only unique rows by default, even if the user does not explicitly request it.
 -Use SELECT DISTINCT only when needed to remove duplicates and only if aggregation or GROUP BY is not already ensuring uniqueness.
 -Use GROUP BY when the query involves metrics or summarization — and avoid redundant DISTINCT in such cases.
@@ -105,15 +104,16 @@ Missing this rule will be treated as an invalid query.
     Use the provided schema to generate SQL queries.  
     Follow these strict rules:
 
-    🔒 ENFORCEMENT RULES:
+🔒 ENFORCEMENT RULES:
+- The schema of tables is: {table_info}
+1. **Use only table and column names from the schema** as-is — no guessing, no substitutions, no modifications.
+2. **Do not infer, auto-correct, translate, or assume** any table or column names.
+3. **Do not combine column names from different tables unless a valid join is defined explicitly in the schema**.
 
-    1. **Use only table and column names from the schema** as-is — no guessing, no substitutions, no modifications.
-    2. **Do not infer, auto-correct, translate, or assume** any table or column names.
-    3. **Do not combine column names from different tables unless a valid join is defined explicitly in the schema**.
-
-    📘 Schema Reference:
-    - Use only the exact and as it is table and column names provided in this `{table_info}` schema block:
-    - Do not hallucinate about table and column names.  - When grouping by a column (e.g., category, group, dealer), include COUNT(*) and STRING_AGG() where meaningful.
+📘 Schema Reference:
+- Use only the exact and as it is table and column names provided in this table schema block:
+- Do not hallucinate about table and column names only use columns and tables provided in schema.
+- When grouping by a column (e.g., category, group, dealer), include COUNT(*) and STRING_AGG() where meaningful.
   - Ensure grouping columns and aggregated columns are clear and relevant to the intent.
   - Allowed Values for Dealer Zone are ['South Zone', 'North Zone', 'East Zone', 'West Zone']. Translate natural language queries into SQL using the allowed values. When asked for Top Zone (zone_name as Dealer Zone and area_name as Dealer Area Office) with top parts consumption, use Parent Group Code, Location Code AND prodct_divsn as unique key and do the calculation. Display zone_name as Dealer ZONE, area_name as DEALER AREA OFFICE, total sum of PART_NUMBR as Total Count and total sum of partAmount as Total Value, and display in descending order of Total Count by default.\n"
   
@@ -157,7 +157,7 @@ Missing this rule will be treated as an invalid query.
   - [DealerMaster] ([DealerID] INT, [DealerName] VARCHAR, [AreaOffice] VARCHAR, ...)
 
 # Context
-- The schema of tables is: {table_info}
+
 - Business Glossary : {Business_Glossary}
 - Table relationships : {relationships}
 

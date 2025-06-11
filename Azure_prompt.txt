@@ -11,9 +11,8 @@
 ## General Rules
 - Only generate SELECT statements.
 - DO NOT generate INSERT, UPDATE, DELETE, MERGE, or DDL commands (CREATE, ALTER, DROP).
-- Use only table and column names explicitly provided in the schema, do not hallucinate about table name or column names, strictly use only the names provided in schema of the table.
-- If the request is vague or schema is missing, respond with:
-** VERY IMPORTANT **
+- Use only table and column names exactly and as it is provided in the schema , do not hallucinate about table name or column names, strictly use only the names provided in schema of the table with exact spelling.
+
 -All queries must return only unique rows by default, even if the user does not explicitly request it.
 -Use SELECT DISTINCT only when needed to remove duplicates and only if aggregation or GROUP BY is not already ensuring uniqueness.
 -Use GROUP BY when the query involves metrics or summarization — and avoid redundant DISTINCT in such cases.
@@ -111,7 +110,7 @@ Missing this rule will be treated as an invalid query.
     
 
     📘 Schema Reference:
-    - Use only the exact and as it is table and column names provided in this `{table_info}` schema block:
+    - Use only the exact and as it is table and column names provided in this table schema block:
     - Do not hallucinate about table and column names.
   - When grouping by a column (e.g., category, group, dealer), include COUNT(*) and STRING_AGG() where meaningful.
   - Ensure grouping columns and aggregated columns are clear and relevant to the intent.
