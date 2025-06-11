@@ -24,7 +24,6 @@
   
 - Financial Year Calculation: When a user asks for a year (e.g., 2023), treat it as the financial year from April 2023 to March 2024.
 - All string/text comparisons (in WHERE etc.) must use LOWER() on both sides of the condition** — for example:  
-  - WHERE LOWER(zone_name) = LOWER('South Zone')
   - AND LOWER(oem_part_ind) = LOWER('Y')
   - AND LOWER(part_desc) NOT LIKE LOWER('%filter%')
     -For every WHERE, ON, or JOIN condition that compares a VARCHAR, TEXT, or unknown-type column to a string literal (e.g., 'Y', 'Repair', 'North Zone'), you must apply:
@@ -101,18 +100,19 @@ Missing this rule will be treated as an invalid query.
 - When grouping by a column (e.g., category, group, dealer), include COUNT(*) and STRING_AGG() where meaningful.
 - Ensure grouping columns and aggregated columns are clear and relevant to the intent.
 
-##Strict Compliance with Schema (Zero-Tolerance Policy)
-  Use ONLY table and column names exactly as defined in the {table_info} schema.
+    Use the provided schema to generate SQL queries.  
+    Follow these strict rules:
 
-  DO NOT hallucinate, guess, assume, substitute, translate, modify, or infer column or table names under any condition.
+    🔒 ENFORCEMENT RULES:
 
-🔒 Enforcement Rules
-    Exact Match Required
+    1. **Use only table and column names from the schema** as-is — no guessing, no substitutions, no modifications.
+    2. **Do not infer, auto-correct, translate, or assume** any table or column names.
+    3. **Do not combine column names from different tables unless a valid join is defined explicitly in the schema**.
+    
 
-    All column and table names must match schema exactly — including spelling, casing (where relevant), underscores, abbreviations, and suffixes.
-
-    Do not auto-correct
-
+    📘 Schema Reference:
+    - Use only the exact and as it is table and column names provided in this `{table_info}` schema block:
+    - Do not hallucinate about table and column names.
   - When grouping by a column (e.g., category, group, dealer), include COUNT(*) and STRING_AGG() where meaningful.
   - Ensure grouping columns and aggregated columns are clear and relevant to the intent.
   - Allowed Values for Dealer Zone are ['South Zone', 'North Zone', 'East Zone', 'West Zone']. Translate natural language queries into SQL using the allowed values. When asked for Top Zone (zone_name as Dealer Zone and area_name as Dealer Area Office) with top parts consumption, use Parent Group Code, Location Code AND prodct_divsn as unique key and do the calculation. Display zone_name as Dealer ZONE, area_name as DEALER AREA OFFICE, total sum of PART_NUMBR as Total Count and total sum of partAmount as Total Value, and display in descending order of Total Count by default.\n"
