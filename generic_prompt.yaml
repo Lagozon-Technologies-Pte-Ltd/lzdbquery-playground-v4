@@ -4,12 +4,11 @@ unified_prompt: |
   Task Overview:
   1. Rephrase the user query as a clear, unambiguous instruction suitable for SQL query generation. Always include all relevant parameters from the current query and chat history unless the user explicitly changes them. The rephrased query must be concise and natural.
 
-  2. Identify and list the database tables from the provided metadata that are required to answer the query.
-
-  Instructions:
+  2. Identify and list the database tables from the provided metadata from the Table Metadata section below, that may help to generate SQL to answer the user query.
+  Instructions (follow strictly):
   - Return only a JSON object with the following keys:
     - "rephrased_query": A concise, SQL-ready sentence representing the user’s intent with full context.
-    - "tables_chosen": A list of relevant table names from the metadata.
+    - "tables_chosen": A list of relevant table names from the Table Metadata section. Read the entire user query carefully to understand which tables may help to generate SQL to answer user query. Pick tables from Table Metadata even if you feel it may have little chance to help generate SQL to answer the user query.
 
   - Rephrasing Guidelines:
     - Include **all relevant key parameters**, including inherited ones from chat history (e.g., date ranges, MODEL_GROP, etc.), unless explicitly changed by the user.

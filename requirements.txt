@@ -188,6 +188,7 @@ snowflake-sqlalchemy==1.5.1
 sortedcontainers==2.4.0
 spacy==3.8.7
 
+pysqlite3-binary
 
 
 spacy-legacy==3.0.12

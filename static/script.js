@@ -146,10 +146,25 @@ function openTab(evt, tabName) {
 }
 
 // Optionally, you can set the default active tab using JavaScript:
-document.addEventListener("DOMContentLoaded", function () {
-    document.getElementsByClassName("tablinks")[0].click(); // Open the first tab by default
-});
+// Modify the DOMContentLoaded event listener
+document.addEventListener('DOMContentLoaded', function () {
+    // Set up initial question type from session
+    const initialQuestionType = document.body.dataset.initialQuestionType || 'generic';
+    document.querySelector(`input[name="questionType"][value="${initialQuestionType}"]`).checked = true;
 
+    // Reset session on page load
+    fetch('/reset-session', { method: 'POST' })
+        .then(response => {
+            if (!response.ok) throw new Error('Session reset failed');
+            console.log('Session has been reset on page load.');
+        })
+        .catch(error => {
+            console.error('Error resetting session on page load:', error);
+        });
+
+    // Set default tab
+    document.getElementsByClassName("tablinks")[0]?.click();
+});
 function toggleDevMode() {
     const devModeToggle = document.getElementById('devModeToggle');
     const xlsxbtn = document.getElementById('xlsx-btn'); // Excel button container
@@ -209,7 +224,7 @@ function connectToDatabase(selectedDatabase) {
         sections = [
             'Mah-POC-Azure'
         ]; // Directly specify PostgreSQL sections
-    } 
+    }
     else if (selectedDatabase == 'Azure SQL') {
         sections = [
             'Azure-SQL-DB'
@@ -251,7 +266,7 @@ document.addEventListener('DOMContentLoaded', function () {
         document.getElementById('database-dropdown').value = savedDatabase;
         connectToDatabase(savedDatabase);
     }
-    
+
     if (savedSection) {
         document.getElementById('section-dropdown').value = savedSection;
         fetchQuestions(savedSection);
@@ -268,10 +283,10 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 
 // Add this to your DOMContentLoaded event listener
-document.getElementById('section-dropdown').addEventListener('change', function() {
+document.getElementById('section-dropdown').addEventListener('change', function () {
     const selectedDatabase = document.getElementById('database-dropdown').value;
     const selectedSection = this.value;
-    
+
     if (selectedDatabase && selectedSection) {
         sessionStorage.setItem('selectedDatabase', selectedDatabase);
         sessionStorage.setItem('selectedSection', selectedSection);
@@ -285,32 +300,40 @@ async function sendMessage() {
     const chatMessages = document.getElementById("chat-messages");
     const typingIndicator = document.getElementById("typing-indicator");
     const queryResultsDiv = document.getElementById('query-results');
+    const tablesContainer = document.getElementById("tables_container");
+    const xlsxbtn = document.getElementById("xlsx-btn");
 
     let userMessage = userQueryInput.value.trim();
     if (!userMessage) return;
 
+    // Clear previous results
+    tablesContainer.innerHTML = "";  // Clear tables container
+    xlsxbtn.innerHTML = "";          // Clear download buttons
+    document.getElementById("sql-query-content").textContent = ""; // Clear SQL query
+    document.getElementById("user_query_display").querySelector('span').textContent = ""; // Clear user query display
+
     // Get selected database and section
     const selectedDatabase = document.getElementById('database-dropdown').value;
-    
+
     // Get current database and section from session storage
     const currentDatabase = sessionStorage.getItem('selectedDatabase');
     const currentSection = sessionStorage.getItem('selectedSection');
+
     if (selectedDatabase && selectedDatabase !== currentDatabase) {
-        // Store the selected database in sessionStorage before reloading
         sessionStorage.setItem('selectedDatabase', selectedDatabase);
         location.reload();
         return;
     }
+
     const selectedSection = document.getElementById('section-dropdown').value;
-    if ((selectedDatabase && selectedDatabase !== currentDatabase) || 
-    (selectedSection && selectedSection !== currentSection)) {
-    // Store the new selections in sessionStorage
-    sessionStorage.setItem('selectedDatabase', selectedDatabase);
-    sessionStorage.setItem('selectedSection', selectedSection);
-    location.reload();
-    return;
-}
-    // Validate selection
+    if ((selectedDatabase && selectedDatabase !== currentDatabase) ||
+        (selectedSection && selectedSection !== currentSection)) {
+        sessionStorage.setItem('selectedDatabase', selectedDatabase);
+        sessionStorage.setItem('selectedSection', selectedSection);
+        location.reload();
+        return;
+    }
+
     if (!selectedDatabase || !selectedSection) {
         alert("Please select both a database and a subject area");
         return;
@@ -334,8 +357,7 @@ async function sendMessage() {
         formData.append('user_query', userMessage);
         formData.append('section', selectedSection);
         formData.append('database', selectedDatabase);
-        console.log(selectedSection) // Add database to form data
-        console.log(selectedDatabase)
+
         const response = await fetch("/submit", { method: "POST", body: formData });
 
         if (!response.ok) throw new Error("Failed to fetch response");
@@ -352,7 +374,8 @@ async function sendMessage() {
             botResponse = data.chat_response || "";
         }
         console.log("interprompt: ", data.interprompt);
-        const langdata = data.langprompt.match(/template="([\s\S]*?)"\)/);
+        console.log("LANGprompt: ", data.langprompt);
+        const langdata = data.langprompt.match(/template='([\s\S]*?)'\)\),/);
         let promptText = langdata ? langdata[1] : "Not found";
         promptText = promptText.replace(/\\n/g, '\n');
         document.getElementById("lang-prompt-content").textContent = promptText;
@@ -553,7 +576,7 @@ document.getElementById("table-dropdown")?.addEventListener("change", (event) =>
 function resetSession() {
     // Show a confirmation dialog first
     const confirmed = confirm("Are you sure you want to reset your session? This will clear all your current data.");
-    
+
     if (!confirmed) return;
 
     // Show loading state (assuming you have a way to display this)
@@ -564,7 +587,7 @@ function resetSession() {
             if (response.ok) {
                 // More friendly success message
                 showToastMessage("Session reset successfully! Refreshing your page...", 'success');
-                
+
                 // Brief delay before reload to let user see the message
                 setTimeout(() => {
                     location.reload();
@@ -733,24 +756,24 @@ function updatePageContent(data) {
     } else {
         tablesContainer.innerHTML = "<p>No tables to display.</p>";
     }
-   // Add copy button in top-right of popup
-   const copyButton = document.createElement('button');
-   copyButton.innerHTML = '<i class="fas fa-copy"></i>';
-   copyButton.className = 'copy-btn-popup';
-   copyButton.addEventListener('click', () => {
-       const sqlQueryText = document.getElementById("sql-query-content").textContent;
-       navigator.clipboard.writeText(sqlQueryText)
-           .then(() => {
-               alert('SQL query copied to clipboard!');
-           })
-           .catch(err => {
-               console.error('Failed to copy: ', err);
-               alert('Failed to copy SQL query to clipboard.');
-           });
-   });
+    // Add copy button in top-right of popup
+    const copyButton = document.createElement('button');
+    copyButton.innerHTML = '<i class="fas fa-copy"></i>';
+    copyButton.className = 'copy-btn-popup';
+    copyButton.addEventListener('click', () => {
+        const sqlQueryText = document.getElementById("sql-query-content").textContent;
+        navigator.clipboard.writeText(sqlQueryText)
+            .then(() => {
+                alert('SQL query copied to clipboard!');
+            })
+            .catch(err => {
+                console.error('Failed to copy: ', err);
+                alert('Failed to copy SQL query to clipboard.');
+            });
+    });
 
-   // Ensure this is inside the modal
-   sqlQueryContent.parentNode.appendChild(copyButton);
+    // Ensure this is inside the modal
+    sqlQueryContent.parentNode.appendChild(copyButton);
 
     // Add the "View SQL Query" button BELOW the Download Excel button
     if (data.query) {
@@ -925,33 +948,51 @@ function closeinterpromptPopup() {
 // to handle the radio button for generic and usecasebased question
 
 // Function to handle question type change
-function handleQuestionTypeChange(event) {
+async function handleQuestionTypeChange(event) {
     const questionType = event.target.value;
-    console.log(questionType);
-    // Step 1: Reset session first
-    fetch('/reset-session', { method: 'POST' })
-        .then(response => {
-            if (!response.ok) throw new Error('Session reset failed');
-            // Step 2: Now set the new question type
-            return fetch('/set-question-type', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ question_type: questionType })
-            });
-        })
-        .then(response => response.json())
-        .then(data => {
-            document.getElementById("chat-messages").innerHTML = "";
-            // Clear and update tables container
-            document.getElementById("tables_container").innerHTML = "";
-            document.getElementById("xlsx-btn").innerHTML = ""; 
-            // Step 3: Optionally update UI or notify user
-            showToastMessage("Question type changed and session reset!", 'success');
+    const radioButtons = document.querySelectorAll('input[name="questionType"]');
 
-        })
-        .catch(error => {
-            showToastMessage("Could not change question type. Try again.", 'error');
+    // Disable radios during processing
+    radioButtons.forEach(radio => radio.disabled = true);
+
+    try {
+        // First reset the session
+        const resetResponse = await fetch('/reset-session', { method: 'POST' });
+        if (!resetResponse.ok) throw new Error('Session reset failed');
+
+        // Then set the new question type
+        const typeResponse = await fetch('/set-question-type', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ question_type: questionType })
         });
+
+        if (!typeResponse.ok) throw new Error('Failed to set question type');
+
+        // Clear UI elements
+        document.getElementById("chat-messages").innerHTML = "";
+        document.getElementById("user_query_display").querySelector('span').textContent = ""; // Clear user query display
+        document.getElementById("tables_container").innerHTML = "";
+        document.getElementById("xlsx-btn").innerHTML = "";
+
+        // Refresh questions if section is selected
+        const selectedSection = document.getElementById('section-dropdown').value;
+        if (selectedSection) {
+            await fetchQuestions(selectedSection);
+        }
+
+        showToastMessage(`Switched to ${questionType} mode!`, 'success');
+    } catch (error) {
+        console.error("Error changing question type:", error);
+        // Revert to previous selection
+        event.target.checked = false;
+        const currentType = document.body.dataset.initialQuestionType || 'generic';
+        document.querySelector(`input[name="questionType"][value="${currentType}"]`).checked = true;
+        showToastMessage("Could not change question type. Try again.", 'error');
+    } finally {
+        // Re-enable radios
+        radioButtons.forEach(radio => radio.disabled = false);
+    }
 }
 
 // Attach event listeners to all radio buttons with name="questionType"

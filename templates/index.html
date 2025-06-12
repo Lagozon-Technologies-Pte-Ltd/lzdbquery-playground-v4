@@ -18,7 +18,7 @@
 
 </head>
 
-<body>
+<body data-initial-question-type="{{ initial_question_type }}">
 
     <header>
         <img src="static/logo.png" alt="DBQuery Logo" class="logo">
@@ -56,11 +56,13 @@
             <!-- Added radio buttons here -->
             <div style="margin:20px;display: flex; gap: 20px; margin-bottom: 10px;">
                 <label style="display: flex; align-items: center; gap: 6px;">
-                    <input type="radio" name="questionType" value="generic" checked>
+                    <input type="radio" name="questionType" value="generic" {% if initial_question_type=='generic'
+                        %}checked{% endif %}>
                     Generic Question
                 </label>
                 <label style="display: flex; align-items: center; gap: 6px;">
-                    <input type="radio" name="questionType" value="usecase">
+                    <input type="radio" name="questionType" value="usecase" {% if initial_question_type=='usecase'
+                        %}checked{% endif %}>
                     Usecase-Based Question
                 </label>
             </div>

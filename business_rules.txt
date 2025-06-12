@@ -2,10 +2,10 @@
    
 "PARTS_RUNNING_REPAIR": (
     "1. Use sv_ro_bill_hdr_sk to join MH_RO_HDR_DETAILS and MH_RO_PARTS.\n"
-    "2. Use MODEL_CD to join MH_MODEL_MASTER and MH_RO_HDR_DETAILS to get MODEL_CO, MODL_GROP_DESC, and FAMILY_DESC.\n"
+    "2. Use MODL_CD to join MH_MODEL_MASTER and MH_RO_HDR_DETAILS to get MODL_CO, MODL_GROP_DESC, and FAMILY_DESC.\n"
     "3. USE parnt_grop, loctn_cd AND prodct_divsn TO JOIN THE TABLES MH_AD_AI_DIMENSION AND MH_RO_HDR_DETAILS TO GET DEALER NAME, DEALER ZONE AND DEALER AREA OFFICE. Allowed Values for Dealer Zone are ['South Zone', 'North Zone', 'East Zone', 'West Zone']. Translate natural language queries into SQL using the allowed values (e.g., 'Show sales in the South Zone' is like WHERE zone_name = 'South Zone').\n"
     "4. In MH_RO_HDR_DETAILS, filter: (SERV_CATGRY_DESC IN ('Free Service', 'Paid Service', 'Repair') AND service group = 'Mechanical') OR (SERV_CATGRY_DESC = 'Accessories' AND service group = 'Accessories') OR (SERV_CATGRY_DESC = 'Bodyshop' AND service group = 'Bodyshop') OR (SERV_CATGRY_DESC = 'Charging' AND service group = 'Others') OR (SERV_CATGRY_DESC IN ('En-Route', 'Pre-Sale/PDI') AND service group = 'Pre-Sale/PDI').\n"
-    "5. In MH_RO_PARTS, filter where part_category_group = 'Spares' AND part_desc NOT LIKE '%filter%'.\n"
+    "5. In MH_RO_PARTS, filter where lower(part_category_group) = lower('Spares') AND lower(part_desc) NOT LIKE lower('%filter%').\n"
     "6. For OEM Parts, filter MH_RO_PARTS where OEM Part Indicator = 'Y'.\n"
     "7. For Local Parts, filter MH_RO_PARTS where OEM Part Indicator = 'N'.\n"
     "8. For general Parts, consider both 'Y' and 'N' in OEM Part Indicator.\n"

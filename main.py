@@ -73,7 +73,6 @@ load_dotenv()  # Load environment variables from .env file
 app = FastAPI()
 app.add_middleware(SessionMiddleware, secret_key="your-secret-key")
 app.add_middleware(LoggingMiddleware)
-gpt_model = os.getenv('gpt_model')
 # Set up static files and templates
 templates = Jinja2Templates(directory="templates")
 app.mount("/static", StaticFiles(directory="static"), name="static")
@@ -132,9 +131,8 @@ llm = AzureChatOpenAI(
     temperature=0
 )
 
-databases = ["GCP", "PostgreSQL-Azure", "Azure SQL"]
+databases = ["Azure SQL"]
 question_dropdown = os.getenv('Question_dropdown')
-# llm = ChatOpenAI(model=gpt_model, temperature=0)# Adjust model as necessary
 
 if 'messages' not in session_state:
     session_state['messages'] = []
@@ -493,7 +491,7 @@ async def transcribe_audio(file: UploadFile = File(...)):
 
 @app.get("/get_questions/")
 @app.get("/get_questions")
-async def get_questions(subject: str):
+async def get_questions(subject: str, request: Request):
     """
     Fetches questions from a CSV file in Azure Blob Storage based on the selected subject.
 
@@ -503,7 +501,11 @@ async def get_questions(subject: str):
     Returns:
         JSONResponse: A JSON response containing the list of questions or an error message.
     """
-    csv_file_name = f"table_files/{subject}_questions.csv"
+    question_type = request.session.get('current_question_type')
+    if question_type == 'generic':
+        csv_file_name = f"table_files/{subject}_questions_generic.csv"
+    else: 
+        csv_file_name = f"table_files/{subject}_questions.csv"
     blob_client = blob_service_client.get_blob_client(container=AZURE_CONTAINER_NAME, blob=csv_file_name)
 
     try:
@@ -548,55 +550,55 @@ def load_prompts(filename:str):
         return {}
     
 
-@app.post("/submit_feedback/")
-@app.post("/submit_feedback")
-async def submit_feedback(request: Request):
-    data = await request.json() # Corrected for FastAPI
+# @app.post("/submit_feedback/")
+# @app.post("/submit_feedback")
+# async def submit_feedback(request: Request):
+#     data = await request.json() # Corrected for FastAPI
     
-    table_name = data.get("table_name")
-    feedback_type = data.get("feedback_type")
-    user_query = data.get("user_query")
-    sql_query = data.get("sql_query")
+#     table_name = data.get("table_name")
+#     feedback_type = data.get("feedback_type")
+#     user_query = data.get("user_query")
+#     sql_query = data.get("sql_query")
 
-    if not table_name or not feedback_type:
-        return JSONResponse(content={"success": False, "message": "Table name and feedback type are required."}, status_code=400)
+#     if not table_name or not feedback_type:
+#         return JSONResponse(content={"success": False, "message": "Table name and feedback type are required."}, status_code=400)
 
-    try:
-        # Create database connection
-        engine = create_engine(
-        f'postgresql+psycopg2://{quote_plus(db_user)}:{quote_plus(db_password)}@{db_host}:{db_port}/{db_database}'
-        )
-        Session = sessionmaker(bind=engine)
-        session = Session()
+#     try:
+#         # Create database connection
+#         engine = create_engine(
+#         f'postgresql+psycopg2://{quote_plus(db_user)}:{quote_plus(db_password)}@{db_host}:{db_port}/{db_database}'
+#         )
+#         Session = sessionmaker(bind=engine)
+#         session = Session()
 
-        # Sanitize input (Escape single quotes)
-        table_name = escape_single_quotes(table_name)
-        user_query = escape_single_quotes(user_query)
-        sql_query = escape_single_quotes(sql_query)
-        feedback_type = escape_single_quotes(feedback_type)
+#         # Sanitize input (Escape single quotes)
+#         table_name = escape_single_quotes(table_name)
+#         user_query = escape_single_quotes(user_query)
+#         sql_query = escape_single_quotes(sql_query)
+#         feedback_type = escape_single_quotes(feedback_type)
 
-        # Insert feedback into database
-        insert_query = f"""
-        INSERT INTO lz_feedbacks (department, user_query, sql_query, table_name, data, feedback_type, feedback)
-        VALUES ('unknown', :user_query, :sql_query, :table_name, 'no data', :feedback_type, 'user feedback')
-        """
+#         # Insert feedback into database
+#         insert_query = f"""
+#         INSERT INTO lz_feedbacks (department, user_query, sql_query, table_name, data, feedback_type, feedback)
+#         VALUES ('unknown', :user_query, :sql_query, :table_name, 'no data', :feedback_type, 'user feedback')
+#         """
 
-        session.execute(insert_query, {
-        "table_name": table_name,
-        "user_query": user_query,
-        "sql_query": sql_query,
-        "feedback_type": feedback_type
-        })
+#         session.execute(insert_query, {
+#         "table_name": table_name,
+#         "user_query": user_query,
+#         "sql_query": sql_query,
+#         "feedback_type": feedback_type
+#         })
 
-        session.commit()
-        session.close()
+#         session.commit()
+#         session.close()
 
-        return JSONResponse(content={"success": True, "message": "Feedback submitted successfully!"})
+#         return JSONResponse(content={"success": True, "message": "Feedback submitted successfully!"})
 
-    except Exception as e:
-        session.rollback()
-        session.close()
-        return JSONResponse(content={"success": False, "message": f"Error submitting feedback: {str(e)}"}, status_code=500)
+#     except Exception as e:
+#         session.rollback()
+#         session.close()
+#         return JSONResponse(content={"success": False, "message": f"Error submitting feedback: {str(e)}"}, status_code=500)
 
 
 import csv
@@ -698,7 +700,7 @@ async def submit_query(
     user_query: str = Form(...),
     page: int = Query(1),
     records_per_page: int = Query(10),
-    model: Optional[str] = Form(gpt_model)
+    model: Optional[str] = Form(AZURE_DEPLOYMENT_NAME)
 ):
     logger.info(f"Received /submit request with query: {user_query}, section: {section}, page: {page}, records_per_page: {records_per_page}, model: {model}")
     if user_query.lower() == 'break':
@@ -729,8 +731,8 @@ async def submit_query(
     logger.info(f"Chat history: {chat_history}")
     try:
        # **Step 1: Invoke Unified Prompt**
-        prompts = getattr(request.app.state, "prompts")
-        current_question_type = getattr(request.app.state, "current_question_type", "generic")
+        current_question_type = request.session.get("current_question_type", "generic")
+        prompts = request.session.get("prompts", load_prompts("generic_prompt.yaml"))
         logger.info(f"Selected query type: {current_question_type}")
 
         key_parameters = get_key_parameters()
@@ -868,7 +870,7 @@ async def submit_query(
 # Replace APIRouter with direct app.post
 
 @app.post("/reset-session")
-async def reset_session():
+async def reset_session(request: Request):
     """
     Resets the session state by clearing the session_state dictionary.
     """
@@ -876,6 +878,11 @@ async def reset_session():
     with session_lock:
         session_state.clear()
         session_state['messages'] = []
+    # Reset per-user session variables
+    request.session.clear()
+    request.session["current_question_type"] = "generic"
+    request.session["prompts"] = load_prompts("generic_prompt.yaml")
+    print("now, the que type is: ",request.session.get("current_question_type"))
     return {"message": "Session state cleared successfully"}, 200
 
 def prepare_table_html(tables_data, page, records_per_page):
@@ -922,9 +929,9 @@ async def read_root(request: Request):
     # Extract table names dynamically
     tables = []
     # Only set defaults if not already set
-    if not hasattr(app.state, "current_question_type"):
-        app.state.current_question_type = 'generic'
-        app.state.prompts = load_prompts("generic_prompt.yaml")
+    if "current_question_type" not in request.session:
+        request.session["current_question_type"] = "generic"
+        request.session["prompts"] = load_prompts("generic_prompt.yaml")
 
     # Pass dynamically populated dropdown options to the template
     return templates.TemplateResponse("index.html", {
@@ -970,6 +977,7 @@ def display_table_with_styles(data, table_name, page_number, records_per_page):
 
 
 @app.get("/get_table_data/")
+@app.get("/get_table_data")
 async def get_table_data(
     table_name: str = Query(...),
     page_number: int = Query(1),
@@ -1014,20 +1022,17 @@ async def get_table_data(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error generating table data: {str(e)}")
 
-current_question_type = "generic"
 
 class QuestionTypeRequest(BaseModel):
     question_type: str
 @app.post("/set-question-type")
-async def set_question_type(payload: QuestionTypeRequest, request:Request):
-    global current_question_type
+async def set_question_type(payload: QuestionTypeRequest, request: Request):
     current_question_type = payload.question_type
-
     filename = "generic_prompt.yaml" if current_question_type == "generic" else "chatbot_prompt.yaml"
     prompts = load_prompts(filename)
-    # Store prompts in app.state for global access
-    request.app.state.prompts = prompts
-    request.app.state.current_question_type = current_question_type
-    print("Received question type:", current_question_type)
+    request.session["current_question_type"] = current_question_type
+    request.session["prompts"] = prompts  # If you want to store prompts per session
 
+    print("Received question type:", current_question_type)
     return JSONResponse(content={"message": "Question type set", "prompts": prompts})
+
