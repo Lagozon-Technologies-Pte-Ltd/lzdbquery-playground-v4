@@ -88,7 +88,7 @@ import configure
 # db_database=os.getenv("db_database")
 # db_port=os.getenv("db_port")
 # db_schema= os.getenv("db_schema")
-mahindra_tables =  json.loads(os.getenv("mahindra_tables"))
+db_tables =  json.loads(os.getenv("db_tables"))
 
 
 SQL_DB_SERVER = os.getenv("SQL_DB_SERVER")
@@ -183,14 +183,14 @@ from sqlalchemy.exc import SQLAlchemyError
 #         raise e  # Propagate the exception
 #     finally:
 #         session.close()
-# def get_postgres_db(selected_subject, mahindra_tables):
-#     print("SELECTED SUB",selected_subject,mahindra_tables)
+# def get_postgres_db(selected_subject, db_tables):
+#     print("SELECTED SUB",selected_subject,db_tables)
 #     try:
 #         print(db_schema)
 #         db = SQLDatabase.from_uri(
 #             f'postgresql+psycopg2://{quote_plus(db_user)}:{quote_plus(db_password)}@{db_host}:{db_port}/{db_database}',
 #             schema=db_schema,
-#             include_tables=mahindra_tables,
+#             include_tables=db_tables,
 #             view_support=True,
 #             sample_rows_in_table_info=1,
 #             lazy_table_reflection=True
@@ -277,7 +277,7 @@ class BigQuerySQLDatabase(SQLDatabase):
 
 
 # Connection for new AZURE SQL 
-def get_sql_db(selected_subject, mahindra_tables):
+def get_sql_db():
     print("connected to newer azure SQL DB.")
     try:
         engine = create_engine(
@@ -372,12 +372,12 @@ def get_chain(question, _messages, selected_model, selected_subject, selected_da
         )
     final_prompt = final_prompt1
     print("langchain prompt: ", final_prompt)
-    if selected_database=="GCP":
-            db = BigQuerySQLDatabase()
-    elif selected_database=="PostgreSQL-Azure":
-        db = get_postgres_db(selected_subject, mahindra_tables)
-    elif selected_database=="Azure SQL":
-        db = get_sql_db(selected_subject, mahindra_tables)
+    # if selected_database=="GCP":
+    #         db = BigQuerySQLDatabase()
+    # elif selected_database=="PostgreSQL-Azure":
+    #     db = get_postgres_db(selected_subject, db_tables)
+    if selected_database=="Azure SQL":
+        db = get_sql_db()
     print("start",selected_database)
     print("Generate Query Starting")
 
@@ -433,7 +433,7 @@ def invoke_chain(question, messages, selected_model, selected_subject, selected_
         print("Response:", response)
 
         tables_data = {}
-        for table in mahindra_tables:
+        for table in db_tables:
             query = response["query"]
             print(f"Executing SQL Query: {query}")
             if selected_database == "GCP":
@@ -458,7 +458,7 @@ def invoke_chain(question, messages, selected_model, selected_subject, selected_
                 tables_data[table] = df
                 break
         # Include SQL_Statement in the return tuple
-        return response, mahindra_tables, tables_data, db, final_prompt
+        return response, db_tables, tables_data, db, final_prompt
 
     except Exception as e:
         print("Error:", e)

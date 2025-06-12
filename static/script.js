@@ -727,7 +727,7 @@ function updatePageContent(data) {
     const sqlQueryContent = document.getElementById("sql-query-content");
     const tablesContainer = document.getElementById("tables_container");
     const xlsxbtn = document.getElementById("xlsx-btn");
-
+    const selectedSection = document.getElementById('section-dropdown').value;
     // Always update these elements regardless of success/failure
     userQueryDisplay.querySelector('span').textContent = data.user_query || "";
     sqlQueryContent.textContent = data.query || "No SQL query available";
@@ -747,7 +747,7 @@ function updatePageContent(data) {
     const faqBtn = document.createElement("button");
     faqBtn.textContent = "Add to FAQs";
     faqBtn.id = "add-to-faqs-btn";
-    faqBtn.onclick = addToFAQs;
+    faqBtn.onclick = addToFAQs(selectedSection);
     faqBtn.style.display = "block";
 
     const emailBtn = document.createElement("button");
@@ -812,7 +812,7 @@ function updatePageContent(data) {
 }/**
  *
  */
-function addToFAQs() {
+function addToFAQs(selectedSection) {
     let userQuery = document.querySelector("#user_query_display span").innerText;
 
     if (!userQuery.trim()) {
@@ -820,7 +820,7 @@ function addToFAQs() {
         return;
     }
 
-    fetch('/add_to_faqs', {
+    fetch(`/add_to_faqs?subject=${selectedSection}`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'

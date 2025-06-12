@@ -253,7 +253,7 @@ class QueryInput(BaseModel):
     query: str
 
 @app.post("/add_to_faqs")
-async def add_to_faqs(data: QueryInput):
+async def add_to_faqs(data: QueryInput, subject:str):
     """
     Adds a user query to the FAQ CSV file on Azure Blob Storage.
 
@@ -266,9 +266,12 @@ async def add_to_faqs(data: QueryInput):
     query = data.query.strip()
     if not query:
         raise HTTPException(status_code=400, detail="Invalid query!")
+    question_type = request.session.get('current_question_type')
 
-    blob_name = 'table_files/mahindra_questions.csv'
-
+    if question_type == 'generic':
+        blob_name = f'table_files/{subject}_questions_generic.csv'
+    elif question_type == "usecase":
+        blob_name = f'table_files/{subject}_questions.csv'
     try:
         # Get the blob client
         blob_client = blob_service_client.get_blob_client(container=AZURE_CONTAINER_NAME, blob=blob_name)
