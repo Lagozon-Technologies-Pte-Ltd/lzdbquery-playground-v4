@@ -408,8 +408,11 @@ def get_chain(question, _messages, selected_model, selected_subject, selected_da
 
 
 
-def invoke_chain(question, messages, selected_model, selected_subject, selected_database, table_info,selected_business_rule,question_type,relationships):
+def invoke_chain(question, messages, selected_model, selected_subject, selected_database, table_info, selected_business_rule, question_type, relationships):
     print(question, messages, selected_model, selected_subject, selected_database)
+    response = None
+    SQL_Statement = None
+    final_prompt = None
     try:
         print('Model used:', selected_model)
         history = create_history(messages)
@@ -421,49 +424,48 @@ def invoke_chain(question, messages, selected_model, selected_subject, selected_
         SQL_Statement = SQL_Statement.replace("SQL Query:", "").strip()
 
         response = chain.invoke({
-            "question": question,           # <-- Correct key
-            "top_k": 1,  #changed from 3 to 1
+            "question": question,
+            "top_k": 1,
             "messages": history.messages,
-            "table_details": table_info  # <-- Required by your prompt
+            "table_details": table_info
         })
         print("Question:", question)
         print("Response:", response)
-        
 
         tables_data = {}
         for table in mahindra_tables:
             query = response["query"]
             print(f"Executing SQL Query: {query}")
-            if selected_database=="GCP":
+            if selected_database == "GCP":
                 result_json = db.run(query)
-                df = pd.DataFrame(result_json)  # Convert result to DataFrame
+                df = pd.DataFrame(result_json)
                 tables_data[table] = df
                 break
-            elif selected_database=="PostgreSQL-Azure":
+            elif selected_database == "PostgreSQL-Azure":
                 alchemyEngine = create_engine(f'postgresql+psycopg2://{quote_plus(db_user)}:{quote_plus(db_password)}@{db_host}:{db_port}/{db_database}')
                 with alchemyEngine.connect() as conn:
-                    df = pd.read_sql(
-                        sql=query,
-                        con=conn.connection
-                    )
-                # tables_data[table] = pd.DataFrame()
+                    df = pd.read_sql(sql=query, con=conn.connection)
                 tables_data[table] = df
                 print(table)
                 break
             elif selected_database == "Azure SQL":
                 print("now running via azure sql")
-                result = db._engine.execute(query)  # SQLAlchemy ResultProxy
+                result = db._engine.execute(query)
                 print("result is: ", result)
-                rows = result.fetchall()  # list of row tuples
-                columns = result.keys()   # dynamic column names
+                rows = result.fetchall()
+                columns = result.keys()
                 df = pd.DataFrame(rows, columns=columns)
                 tables_data[table] = df
                 break
+        # Include SQL_Statement in the return tuple
         return response, mahindra_tables, tables_data, db, final_prompt
 
     except Exception as e:
         print("Error:", e)
-        return "Error in invoke chain function", [], {}, e,None
+        # Return whatever response was generated, or None if none was generated
+        # Also return SQL_Statement and final_prompt if available
+        return response, [], {}, e, final_prompt
+
 
 def create_history(messages):
     history = ChatMessageHistory()

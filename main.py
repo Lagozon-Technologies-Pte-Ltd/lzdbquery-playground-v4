@@ -702,170 +702,202 @@ async def submit_query(
     records_per_page: int = Query(10),
     model: Optional[str] = Form(AZURE_DEPLOYMENT_NAME)
 ):
-    logger.info(f"Received /submit request with query: {user_query}, section: {section}, page: {page}, records_per_page: {records_per_page}, model: {model}")
-    if user_query.lower() == 'break':
-        # Capture current state before reset
-        response_data = {
-            "user_query": user_query,
-            "chat_response": "Session restarted",
-            "history": session_state['messages'] + [{"role": "assistant", "content": "Session restarted"}]
-        }
-        
-        # Clear session state
-        session_state.clear()
-        session_state['messages'] = []  # Reinitialize messages array
-        logger.info("Session restarted due to 'break' query.")
-        return JSONResponse(content=response_data)        
-    selected_subject = section
-    selected_database= database
+    logger.info(f"Received /submit request with query: {user_query}, section: {section}")
+    
+    # Initialize response structure
+    response_data = {
+        "user_query": user_query,
+        "query": "",
+        "tables": [],
+        "llm_response": "",
+        "chat_response": "",
+        "history": session_state.get('messages', []),
+        "interprompt": "",
+        "langprompt": "",
+        "error": None
+    }
 
-    session_state['user_query'] = user_query
-
-    # Append user's message to chat history
-    session_state['messages'].append({"role": "user", "content": user_query})
-
-    # Keep last 10 messages for better context
-    chat_history = "\n".join(
-        f"{msg['role']}: {msg['content']}" for msg in session_state['messages'][-10:]
-    )  
-    logger.info(f"Chat history: {chat_history}")
     try:
-       # **Step 1: Invoke Unified Prompt**
+        # Reset per-request variables
+        unified_prompt = ""
+        final_prompt = ""
+        llm_reframed_query = ""
+        
+        # Get current question type from session
         current_question_type = request.session.get("current_question_type", "generic")
         prompts = request.session.get("prompts", load_prompts("generic_prompt.yaml"))
-        logger.info(f"Selected query type: {current_question_type}")
-
-        key_parameters = get_key_parameters()
-        keyphrases = get_keyphrases()
         
-        # For usecase specific logic
-        if current_question_type == "usecase":
-            unified_prompt = prompts["unified_prompt"].format(user_query=user_query, chat_history=chat_history, key_parameters=key_parameters, keyphrases=keyphrases)
-            llm_reframed_query = llm.invoke(unified_prompt).content.strip()
-            logger.info(f"LLM Unified Prompt Response: {llm_reframed_query}")
-            intent_result = intent_classification(llm_reframed_query)
-            logger.info(f"Intent Result: {intent_result}")
-            if intent_result:
-                intent = intent_result["intent"]
-                logger.info(f"Chosen Intent: {intent}")
+        # Handle session messages
+        if 'messages' not in session_state:
+            session_state['messages'] = []
+        
+        session_state['messages'].append({"role": "user", "content": user_query})
+        chat_history = "\n".join(
+            f"{msg['role']}: {msg['content']}" for msg in session_state['messages'][-10:]
+        )
 
-                chosen_tables = intent_result["tables"]
-            else:
-                error_msg = "Please rephrase or add more details to your question as I am not able to assess the Intended Use case"
-                session_state['messages'].append({
-                    "role": "assistant",
-                    "content": error_msg
-                })
+        # Step 1: Generate unified prompt based on question type
+        try:
+            if current_question_type == "usecase":
+                key_parameters = get_key_parameters()
+                keyphrases = get_keyphrases()
+                unified_prompt = prompts["unified_prompt"].format(
+                    user_query=user_query,
+                    chat_history=chat_history,
+                    key_parameters=key_parameters,
+                    keyphrases=keyphrases
+                )
                 
-                response_data = {
-                    "user_query": session_state['user_query'],
-                    "query": "",
-                    "tables": "",
-                    "llm_response": llm_reframed_query,
-                    "chat_response": error_msg,
-                    "history": session_state['messages'],
-                    "interprompt": unified_prompt,
-                    "langprompt": ""
-                }
-                return JSONResponse(content=response_data)
-            selected_business_rule= get_business_rule(intent = intent_result["intent"])
-
-        # For generic specific logic
-        elif current_question_type == "generic":
-            tables_metadata = get_table_metadata(selected_subject=selected_subject)
-            unified_prompt = prompts["unified_prompt"].format(
-                user_query=user_query,
-                chat_history=chat_history,
-                key_parameters=key_parameters,
-                keyphrases=keyphrases,
-                table_metadata=tables_metadata
+                llm_reframed_query = llm.invoke(unified_prompt).content.strip()
+                intent_result = intent_classification(llm_reframed_query)
+                
+                if not intent_result:
+                    raise HTTPException(
+                        status_code=400,
+                        detail="Please rephrase or add more details to your question"
+                    )
+                
+                chosen_tables = intent_result["tables"]
+                selected_business_rule = get_business_rule(intent_result["intent"])
+                
+            elif current_question_type == "generic":
+                tables_metadata = get_table_metadata(selected_subject=section)
+                unified_prompt = prompts["unified_prompt"].format(
+                    user_query=user_query,
+                    chat_history=chat_history,
+                    key_parameters=get_key_parameters(),
+                    keyphrases=get_keyphrases(),
+                    table_metadata=tables_metadata
+                )
+                
+                llm_response_str = llm.invoke(unified_prompt).content.strip()
+                try:
+                    llm_result = json.loads(llm_response_str)
+                    llm_reframed_query = llm_result.get("rephrased_query", "")
+                    chosen_tables = llm_result.get("tables_chosen", [])
+                    selected_business_rule = ""
+                except json.JSONDecodeError:
+                    raise HTTPException(
+                        status_code=500,
+                        detail="Failed to parse LLM response"
+                    )
+            
+            response_data["llm_response"] = llm_reframed_query
+            response_data["interprompt"] = unified_prompt
+            
+        except Exception as e:
+            logger.error(f"Prompt generation error: {str(e)}")
+            raise HTTPException(
+                status_code=500,
+                detail=f"Prompt generation failed: {str(e)}"
             )
 
+        # Step 2: Invoke LangChain
+        try:
+            relationships = find_relationships_for_tables(chosen_tables, 'table_relation.json')
+            table_details = get_table_details(selected_subject=section, table_name=chosen_tables)
+            
+            response, chosen_tables, tables_data, agent_executor, final_prompt = invoke_chain(
+                llm_reframed_query,
+                session_state['messages'],
+                model,
+                section,
+                database,
+                table_details,
+                selected_business_rule,
+                current_question_type,
+                relationships
+            )
+            
+            response_data["langprompt"] = str(final_prompt)
+            
+            if isinstance(response, str):
+                response_data["query"] = response
+                session_state['generated_query'] = response
+            else:
+                response_data["query"] = response.get("query", "")
+                session_state['generated_query'] = response.get("query", "")
+                session_state['chosen_tables'] = chosen_tables
+                session_state['tables_data'] = tables_data
 
-            llm_response_str = llm.invoke(unified_prompt).content.strip()
-            logger.info("LLM raw response: %s", llm_response_str)
+        except Exception as e:
+            logger.error(f"LangChain invocation error: {str(e)}", exc_info=True)
+            raise HTTPException(
+                status_code=500,
+                detail=f"Query execution failed: {str(e)}"
+            )
 
+        # Step 3: Process results
+        if chosen_tables and 'tables_data' in session_state:
             try:
-                llm_result = json.loads(llm_response_str)
-            except json.JSONDecodeError as e:
-                logger.error(f"Failed to parse LLM response as JSON: {e}")
-                raise HTTPException(status_code=500, detail=f"Failed to parse LLM response as JSON: {e}")
+                # Format numeric columns
+                for table_name, df in session_state['tables_data'].items():
+                    for col in df.select_dtypes(include=['number']).columns:
+                        session_state['tables_data'][table_name][col] = df[col].apply(format_number)
+                
+                # Prepare table HTML
+                response_data["tables"] = prepare_table_html(
+                    session_state['tables_data'],
+                    page,
+                    records_per_page
+                )
+                
+                # Generate insights if data exists
+                data_preview = next(iter(session_state['tables_data'].values())).head(5).to_string(index=False)
+                response_data["chat_response"] = ""  # Placeholder for actual insights
+                
+            except Exception as e:
+                logger.error(f"Data processing error: {str(e)}")
+                response_data["chat_response"] = f"Data retrieved but processing failed: {str(e)}"
 
-            llm_reframed_query = llm_result.get("rephrased_query", "")
-            chosen_tables = llm_result.get("tables_chosen", [])
-            selected_business_rule = ""
-            
-
-       
-        
-        
-        relationships = find_relationships_for_tables(chosen_tables , 'table_relation.json')
-        table_details = get_table_details(selected_subject=selected_subject,table_name=chosen_tables)
-        response, chosen_tables, tables_data, agent_executor, final_prompt = invoke_chain(
-                llm_reframed_query, session_state['messages'], model,
-                selected_subject, selected_database, table_details,
-                selected_business_rule, current_question_type, relationships
-            )
-        logger.info(f"Intent table: {chosen_tables}")
-        logger.info(f"table details: {table_details}")
-
-        if isinstance(response, str):
-            session_state['generated_query'] = response
-            logger.info(f"Generated Query: {response}")
-        else:
-            session_state['chosen_tables'] = chosen_tables
-            session_state['tables_data'] = tables_data
-            sql_query = response.get("query", "")
-            session_state['generated_query'] = sql_query
-            logger.info(f"SQL Query: {sql_query}")
-
-        # **Step 4: Generate Insights (if data exists)**
-        chat_insight = None
-        if chosen_tables:
-            data_preview = tables_data[chosen_tables[0]].head(5).to_string(index=False) if chosen_tables else "No Data"
-            logger.info(f"Data Preview: {data_preview}")
-            # insights_prompt = PROMPTS["insights_prompt"].format(
-            #     sql_query=sql_query,
-            #     table_data=tables_data
-            # )
-
-            # chat_insight = llm.invoke(insights_prompt).content
-            chat_insight = ""  #this text will be passed to chat_insight when insight prompt is commented
-            logger.info(f"Chat Insight: {chat_insight}")
-            
-        # Append AI's response to chat history
+        # Append successful response to chat history
         session_state['messages'].append({
             "role": "assistant",
-            "content": f" {chat_insight}\n\n"
+            "content": response_data["chat_response"]
         })
-        for table_name, df in tables_data.items():
-            for col in df.select_dtypes(include=['number']).columns:
-                tables_data[table_name][col] = df[col].apply(format_number)
 
-        # **Step 5: Prepare Table Data**
-        tables_html = prepare_table_html(tables_data, page, records_per_page)
-
-     
-
-        # **Step 7: Return Response**
-        response_data = {
-            "user_query": session_state['user_query'],
-            "query": session_state['generated_query'],
-            "tables": tables_html,
-            "llm_response": llm_reframed_query,
-            "chat_response": chat_insight,
-            "history": session_state['messages'],
-            "interprompt":unified_prompt,
-            "langprompt": str(final_prompt)
-        }
-        logger.info("langprompt: %s", final_prompt)
-        logger.info("Returning JSON response.")
         return JSONResponse(content=response_data)
 
+    except HTTPException as he:
+        # Capture error details
+        response_data.update({
+            "chat_response": f"Error: {he.detail}",
+            "error": str(he.detail),
+            "history": session_state.get('messages', []),
+            "langprompt": str(final_prompt) if 'final_prompt' in locals() else "Not generated due to error",
+            "interprompt": unified_prompt if 'unified_prompt' in locals() else "Not generated due to error"
+        })
+        
+        session_state['messages'].append({
+            "role": "assistant",
+            "content": f"Error: {he.detail}"
+        })
+        
+        return JSONResponse(
+            content=response_data,
+            status_code=he.status_code
+        )
+        
     except Exception as e:
-        logger.error(f"Error processing the prompt: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Error processing the prompt: {str(e)}")
-
+        # Unexpected errors
+        logger.error(f"Unexpected error: {str(e)}", exc_info=True)
+        response_data.update({
+            "chat_response": "An unexpected error occurred",
+            "error": str(e),
+            "history": session_state.get('messages', []),
+            "langprompt": str(final_prompt) if 'final_prompt' in locals() else "Not generated due to error",
+            "interprompt": unified_prompt if 'unified_prompt' in locals() else "Not generated due to error"
+        })
+        
+        session_state['messages'].append({
+            "role": "assistant",
+            "content": "An unexpected error occurred"
+        })
+        
+        return JSONResponse(
+            content=response_data,
+            status_code=500
+        )
 
 # Replace APIRouter with direct app.post
 

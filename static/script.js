@@ -302,44 +302,31 @@ async function sendMessage() {
     const queryResultsDiv = document.getElementById('query-results');
     const tablesContainer = document.getElementById("tables_container");
     const xlsxbtn = document.getElementById("xlsx-btn");
+    const sqlQueryContent = document.getElementById("sql-query-content");
+    const langPromptContent = document.getElementById("lang-prompt-content");
+    const interpPromptContent = document.getElementById("interp-prompt-content");
 
     let userMessage = userQueryInput.value.trim();
     if (!userMessage) return;
 
-    // Clear previous results
-    tablesContainer.innerHTML = "";  // Clear tables container
-    xlsxbtn.innerHTML = "";          // Clear download buttons
-    document.getElementById("sql-query-content").textContent = ""; // Clear SQL query
-    document.getElementById("user_query_display").querySelector('span').textContent = ""; // Clear user query display
+    // Clear previous results but keep chat history
+    tablesContainer.innerHTML = "";
+    xlsxbtn.innerHTML = "";
+    sqlQueryContent.textContent = "";
+    langPromptContent.textContent = "";
+    interpPromptContent.textContent = "";
+    document.getElementById("user_query_display").querySelector('span').textContent = "";
 
     // Get selected database and section
     const selectedDatabase = document.getElementById('database-dropdown').value;
-
-    // Get current database and section from session storage
-    const currentDatabase = sessionStorage.getItem('selectedDatabase');
-    const currentSection = sessionStorage.getItem('selectedSection');
-
-    if (selectedDatabase && selectedDatabase !== currentDatabase) {
-        sessionStorage.setItem('selectedDatabase', selectedDatabase);
-        location.reload();
-        return;
-    }
-
     const selectedSection = document.getElementById('section-dropdown').value;
-    if ((selectedDatabase && selectedDatabase !== currentDatabase) ||
-        (selectedSection && selectedSection !== currentSection)) {
-        sessionStorage.setItem('selectedDatabase', selectedDatabase);
-        sessionStorage.setItem('selectedSection', selectedSection);
-        location.reload();
-        return;
-    }
 
     if (!selectedDatabase || !selectedSection) {
         alert("Please select both a database and a subject area");
         return;
     }
 
-    // Append user message
+    // Append user message to chat
     chatMessages.innerHTML += `
         <div class="message user-message">
             <div class="message-content">${userMessage}</div>
@@ -348,7 +335,7 @@ async function sendMessage() {
     userQueryInput.value = "";
     chatMessages.scrollTop = chatMessages.scrollHeight;
 
-    // Show typing indicator
+    // Show loading state
     typingIndicator.style.display = "flex";
     queryResultsDiv.style.display = "block";
 
@@ -358,52 +345,81 @@ async function sendMessage() {
         formData.append('section', selectedSection);
         formData.append('database', selectedDatabase);
 
-        const response = await fetch("/submit", { method: "POST", body: formData });
-
-        if (!response.ok) throw new Error("Failed to fetch response");
+        const response = await fetch("/submit", {
+            method: "POST",
+            body: formData
+        });
 
         const data = await response.json();
+
+        // Always show these elements regardless of success/error
+        sqlQueryContent.textContent = data.query || "";
+        interpPromptContent.textContent = data.interprompt || "";
+
+        // Format and display langprompt
+        const langdata = data.langprompt?.match(/template='([\s\S]*?)'\)\),/);
+        let promptText = langdata ? langdata[1] : data.langprompt || "Not available";
+        promptText = promptText.replace(/\\n/g, '\n');
+        langPromptContent.textContent = promptText;
+        Prism.highlightElement(langPromptContent);
+
+        // Hide typing indicator
         typingIndicator.style.display = "none";
 
-        let botResponse = "";
-
-        if (!data.query) {
-            botResponse = data.chat_response || "I couldn't find any insights for this query.";
+        if (!response.ok) {
+            // Error case - show error message but keep prompts visible
+            chatMessages.innerHTML += `
+                <div class="message ai-message error">
+                    <div class="message-content">
+                        <strong>Error:</strong> ${data.chat_response || "An unknown error occurred"}
+                    </div>
+                </div>
+            `;
         } else {
-            document.getElementById("sql-query-content").textContent = data.query;
-            botResponse = data.chat_response || "";
+            // Success case
+            let botResponse = "";
+
+            if (!data.query) {
+                botResponse = data.chat_response || "I couldn't find any insights for this query.";
+            } else {
+                botResponse = data.chat_response || "";
+            }
+
+            chatMessages.innerHTML += `
+                <div class="message ai-message">
+                    <div class="message-content">
+                        <strong>LLM Interpretation:</strong> ${data.llm_response || "Not available"}<br><br>
+                        ${botResponse}
+                    </div>
+                </div>
+            `;
+
+            if (data.tables && data.tables.length > 0) {
+                tableName = data.tables[0].table_name;
+                loadTableColumns(tableName);
+            }
         }
-        console.log("interprompt: ", data.interprompt);
-        console.log("LANGprompt: ", data.langprompt);
-        const langdata = data.langprompt.match(/template='([\s\S]*?)'\)\),/);
-        let promptText = langdata ? langdata[1] : "Not found";
-        promptText = promptText.replace(/\\n/g, '\n');
-        document.getElementById("lang-prompt-content").textContent = promptText;
-        Prism.highlightElement(document.getElementById("lang-prompt-content"));
-        document.getElementById("interp-prompt-content").textContent = data.interprompt;
+        updatePageContent(data);
+
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+    } catch (error) {
+        console.error("Error:", error);
+        typingIndicator.style.display = "none";
+
         chatMessages.innerHTML += `
-            <div class="message ai-message">
+            <div class="message ai-message error">
                 <div class="message-content">
-                    LLM Interpretation: ${data.llm_response}<br>
-                    ${botResponse}
+                    <strong>Network Error:</strong> Failed to communicate with the server. Please try again.
                 </div>
             </div>
         `;
 
-        chatMessages.scrollTop = chatMessages.scrollHeight;
-        if (data.tables) {
-            console.log()
-            tableName = data.tables[0].table_name;
-            loadTableColumns(tableName)
-            updatePageContent(data);
-        }
-    } catch (error) {
-        console.error("Error:", error);
-        typingIndicator.style.display = "none";
-        alert("Error processing request.");
+        // Clear prompts on complete failure
+        sqlQueryContent.textContent = "Not available due to network error";
+        interpPromptContent.textContent = "";
+        langPromptContent.textContent = "";
     }
 }
-
 // Your existing mic recording function
 async function toggleRecording() {
     const micButton = document.getElementById("chat-mic-button");
@@ -708,102 +724,92 @@ function chooseExampleQuestion() {
  */
 function updatePageContent(data) {
     const userQueryDisplay = document.getElementById("user_query_display");
-    const sqlQueryContent = document.getElementById("sql-query-content"); // Get the modal content
+    const sqlQueryContent = document.getElementById("sql-query-content");
     const tablesContainer = document.getElementById("tables_container");
-    const xlsxbtn = document.getElementById("xlsx-btn"); // Excel button container
-    const emailbtn = document.getElementById("email-btn"); // Excel button container
-    const faqbtn = document.getElementById("add-to-faqs-btn");
-    // Update user query text
-    userQueryDisplay.querySelector('span').textContent = data.user_query || "";
+    const xlsxbtn = document.getElementById("xlsx-btn");
 
-    // Clear and update tables container
+    // Always update these elements regardless of success/failure
+    userQueryDisplay.querySelector('span').textContent = data.user_query || "";
+    sqlQueryContent.textContent = data.query || "No SQL query available";
+
+    // Clear containers
     tablesContainer.innerHTML = "";
-    xlsxbtn.innerHTML = ""; // Clear Excel button container before adding new buttons
+    xlsxbtn.innerHTML = "";
+
+    // Always create these buttons (they'll be visible but potentially disabled)
+    const viewQueryBtn = document.createElement("button");
+    viewQueryBtn.textContent = "SQL Query";
+    viewQueryBtn.id = "view-sql-query-btn";
+    viewQueryBtn.onclick = showSQLQueryPopup;
+    viewQueryBtn.style.display = "block";
+    viewQueryBtn.disabled = !data.query; // Disable if no query available
+
+    const faqBtn = document.createElement("button");
+    faqBtn.textContent = "Add to FAQs";
+    faqBtn.id = "add-to-faqs-btn";
+    faqBtn.onclick = addToFAQs;
+    faqBtn.style.display = "block";
+
+    const emailBtn = document.createElement("button");
+    emailBtn.id = "send-email-btn";
+    emailBtn.textContent = "Send Email";
+    emailBtn.style.display = "block";
+    emailBtn.disabled = !data.tables; // Disable if no tables available
+
+    // Add buttons to container
+    xlsxbtn.appendChild(viewQueryBtn);
+    xlsxbtn.appendChild(faqBtn);
+    xlsxbtn.appendChild(emailBtn);
+
+    // Add copy button for SQL query
+    const copyButton = document.createElement('button');
+    copyButton.innerHTML = '<i class="fas fa-copy"></i>';
+    copyButton.className = 'copy-btn-popup';
+    copyButton.addEventListener('click', () => {
+        const sqlQueryText = sqlQueryContent.textContent;
+        if (sqlQueryText && sqlQueryText !== "No SQL query available") {
+            navigator.clipboard.writeText(sqlQueryText)
+                .then(() => alert('SQL query copied to clipboard!'))
+                .catch(err => console.error('Failed to copy:', err));
+        }
+    });
+    sqlQueryContent.parentNode.appendChild(copyButton);
+
+    // Handle table display (if data exists)
     if (data.tables && data.tables.length > 0) {
         data.tables.forEach((table) => {
             const tableWrapper = document.createElement("div");
-
             tableWrapper.innerHTML = `
                 <div id="${table.table_name}_table">${table.table_html}</div>
                 <div id="${table.table_name}_pagination"></div>
-                <div id="${table.table_name}_error"></div>
                 <div class="feedback-section">
                     <button class="like-button" data-table="${table.table_name}" onclick="submitFeedback('${table.table_name}', 'like')">Like</button>
                     <button class="dislike-button" data-table="${table.table_name}" onclick="submitFeedback('${table.table_name}', 'dislike')">Dislike</button>
                     <span id="${table.table_name}_feedback_message"></span>
-                </div>
+                </div>
             `;
-
             tablesContainer.appendChild(tableWrapper);
 
-            // Create "Download Excel" button with spacing
+            // Add download button for each table
             const downloadButton = document.createElement("button");
-            downloadButton.id = `download-button-${table.table_name}`;
             downloadButton.className = "download-btn";
             downloadButton.innerHTML = `<img src="static/excel.png" alt="xlsx" class="excel-icon"> Download Excel`;
             downloadButton.onclick = () => downloadSpecificTable(table.table_name);
+            xlsxbtn.insertBefore(downloadButton, viewQueryBtn);
 
-            xlsxbtn.appendChild(downloadButton);
-            // Add pagination
             updatePaginationLinks(
                 table.table_name,
                 table.pagination.current_page,
                 table.pagination.total_pages,
                 table.pagination.records_per_page
             );
-
         });
     } else {
-        tablesContainer.innerHTML = "<p>No tables to display.</p>";
+        tablesContainer.innerHTML = `<div class="no-data-message">
+            <p>${data.chat_response || "No data available"}</p>
+        </div>`;
     }
-    // Add copy button in top-right of popup
-    const copyButton = document.createElement('button');
-    copyButton.innerHTML = '<i class="fas fa-copy"></i>';
-    copyButton.className = 'copy-btn-popup';
-    copyButton.addEventListener('click', () => {
-        const sqlQueryText = document.getElementById("sql-query-content").textContent;
-        navigator.clipboard.writeText(sqlQueryText)
-            .then(() => {
-                alert('SQL query copied to clipboard!');
-            })
-            .catch(err => {
-                console.error('Failed to copy: ', err);
-                alert('Failed to copy SQL query to clipboard.');
-            });
-    });
-
-    // Ensure this is inside the modal
-    sqlQueryContent.parentNode.appendChild(copyButton);
-
-    // Add the "View SQL Query" button BELOW the Download Excel button
-    if (data.query) {
-        sqlQueryContent.textContent = data.query;
-
-        // Create "View SQL Query" button dynamically
-        const viewQueryBtn = document.createElement("button");
-        viewQueryBtn.textContent = "SQL Query";
-        viewQueryBtn.id = "view-sql-query-btn";
-        viewQueryBtn.onclick = showSQLQueryPopup;
-        viewQueryBtn.style.display = "block"; // Ensure button appears in a new line
-        const faqBtn = document.createElement("button");
-        faqBtn.textContent = "Add to FAQs";
-        faqBtn.id = "add-to-faqs-btn";
-        faqBtn.onclick = addToFAQs;
-        faqBtn.style.display = "block"; // Ensure button appears in a new line
-        const emailbtn = document.createElement("button");
-        emailbtn.id = "send-email-btn";
-
-        emailbtn.textContent = "Send Email";
-
-        emailbtn.style.display = "block";
-        xlsxbtn.appendChild(viewQueryBtn); // Append below the Excel download button
-        xlsxbtn.appendChild(faqBtn);
-        xlsxbtn.appendChild(emailbtn) // Append below the Excel download button
-    } else {
-        sqlQueryContent.textContent = "No SQL query available.";
-    }
-}
-/**
+}/**
  *
  */
 function addToFAQs() {

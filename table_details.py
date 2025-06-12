@@ -24,32 +24,34 @@ llm = AzureChatOpenAI(
 )
 
 from typing import List
-__import__('pysqlite3')
-import sys
-sys.modules['sqlite3'] = sys.modules.pop('pysqlite3')
+# __import__('pysqlite3')
+# import sys
+# sys.modules['sqlite3'] = sys.modules.pop('pysqlite3')
 
 def get_table_details(selected_subject='Demo', table_name=None):
     """
-    Returns details for one or more tables from a subject-specific CSV file.
-    - selected_subject: base name of CSV file (without .csv)
+    Returns details for one or more tables from a subject-specific JSON file.
+    - selected_subject: base name of JSON file (without .json)
     - table_name: string or list of strings (table names to filter on)
     """
-    # Build the path to the CSV file
-    select_database_table_desc_csv = selected_subject + ".csv"
-    path = f'table_files/{select_database_table_desc_csv}'
+    # Build the path to the JSON file
+    select_database_table_desc_json = selected_subject + ".json"
+    path = os.path.join('table_files', select_database_table_desc_json)
     
     try:
-        table_description = pd.read_csv(path)
+        with open(path, 'r', encoding='utf-8') as f:
+            json_data = json.load(f)
     except FileNotFoundError:
         return f"File not found: {path}"
     except Exception as e:
         return f"Error reading file: {e}"
 
-    table_details = ""
-    print("path for csv: ", path)
+    if 'tables' not in json_data:
+        return "Invalid JSON format: missing 'tables' key."
 
-    # Check if 'data_type' column exists
-    has_data_type = 'data_type' in table_description.columns
+    tables = json_data['tables']
+    table_details = ""
+    print("path for json: ", path)
 
     # Normalize table_name(s) for filtering
     table_names = []
@@ -60,37 +62,29 @@ def get_table_details(selected_subject='Demo', table_name=None):
             table_names = [t.strip().lower() for t in table_name if t.strip()]
         else:
             return "Invalid table_name argument."
-        filtered = table_description[table_description['table_name'].str.lower().isin(table_names)]
-        if filtered.empty:
+        filtered_tables = [t for t in tables if t['table_name'].lower() in table_names]
+        if not filtered_tables:
             return f"No details found for table(s): {', '.join(table_names)}"
-        grouped = filtered.groupby(['table_name', 'table_description'])
     else:
-        grouped = table_description.groupby(['table_name', 'table_description'])
+        filtered_tables = tables
 
-    for (table, desc), group in grouped:
-        table_details += f"Table Name: {table}\n"
-        table_details += f"Table Description: {desc}\n"
+    for table in filtered_tables:
+        table_details += f"Table Name: {table['table_name']}\n"
+        table_details += f"Table Description: {table['table_description']}\n"
         table_details += "Columns:\n"
-        for i, row in group.iterrows():
-            # Parse column_name&description
-            col_info = row.get('column_name&description', '')
-            if ':' in col_info:
-                col_name, col_desc = col_info.split(':', 1)
-                col_name = col_name.strip()
-                col_desc = col_desc.strip()
-            else:
-                col_name = col_info.strip()
-                col_desc = ""
-            # Add data type if present
-            if has_data_type:
-                data_type = row['data_type']
-                table_details += f"  - {col_name} ({data_type}): {col_desc}\n"
-            else:
-                table_details += f"  - {col_name}: {col_desc}\n"
+        for col in table['columns']:
+            col_name = col.get('column_name', '')
+            data_type = col.get('data_type', '')
+            nullable = col.get('nullable', False)
+            description = col.get('description', '')
+            table_details += f"  - {col_name} ({data_type})"
+            if nullable:
+                table_details += " [NULLABLE]"
+            table_details += f": {description}\n"
         table_details += "\n"
 
     if not table_details:
-        table_details = "No tables found in the CSV."
+        table_details = "No tables found in the JSON."
     
     return table_details
 class Table(BaseModel):
@@ -107,7 +101,7 @@ def get_table_metadata(selected_subject='Demo'):
     Returns a list of table names and their descriptions from a subject-specific JSON file.
     - selected_subject: base name of JSON file (without .json)
     """
-    path = f'tables_details.json'
+    path = f'table_files/Azure-SQL-DB.json'
     
     try:
         with open(path, 'r', encoding='utf-8') as f:
