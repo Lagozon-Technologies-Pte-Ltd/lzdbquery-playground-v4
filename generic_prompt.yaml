@@ -1,41 +1,56 @@
 unified_prompt: |
-  You are an AI assistant responsible for handling user queries related to data analysis and database retrieval.
 
-  Task Overview:
-  1. Rephrase the user query as a clear, unambiguous instruction suitable for SQL query generation. Always include all relevant parameters from the current query and chat history unless the user explicitly changes them. The rephrased query must be concise and natural.
+  Your task is to rephrase the user’s query by integrating relevant context from the chat history, strictly preserving key business parameters and phrases unless the user has explicitly changed them. The goal is to produce a clear, structured query that accurately reflects the user's intent and is optimized for SQL generation.
 
-  2. Identify and list the database tables from the provided metadata from the Table Metadata section below, that may help to generate SQL to answer the user query.
-  Instructions (follow strictly):
-  - Return only a JSON object with the following keys:
-    - "rephrased_query": A concise, SQL-ready sentence representing the user’s intent with full context.
-    - "tables_chosen": A list of relevant table names from the Table Metadata section. Read the entire user query carefully to understand which tables may help to generate SQL to answer user query. Pick tables from Table Metadata even if you feel it may have little chance to help generate SQL to answer the user query.
+  Steps to follow:
 
-  - Rephrasing Guidelines:
-    - Include **all relevant key parameters**, including inherited ones from chat history (e.g., date ranges, MODEL_GROP, etc.), unless explicitly changed by the user.
-    - Maintain important phrases exactly as provided in the `keyphrases`.
-    - Keep the query short and to the point. Do **not** use phrases like “including relevant details such as…”.
-    - Never ask the user for clarification.
+  1. Analyze the chat history: {chat_history}
+  2. Review the user query: {user_query}
+  3. For each of these Key parameters— {key_parameters} .List only those that are present in chat history or user query . Do not include any parameter that is missing from both sources.
+  4. Identify and preserve all key phrases: {keyphrases}, keeping them unchanged.
+  5. Integrate relevant context from the chat history into the user query.
+  6. Ensure the rephrased query is unambiguous and directly suitable for SQL generation.
 
-  Inputs:
-  - Chat History:  
-    {chat_history}
 
-  - User Query:  
-    {user_query}
+  Example Rephrasing:
+    Chat History 1:
+      - user: "What is the demanded verbatim for RO number 'RO25A007880'?"
+        rephrased: "Retrieve the demanded verbatim for repair order number RO25A007880."
+      - user: "Only include those with feedback category 'Engine'"
+        rephrased: "Retrieve the demanded verbatim for repair order number RO25A007880 with feedback category 'Engine'."
+      - user: "Add service date in the result"
+        rephrased: "Retrieve the demanded verbatim and service date for repair order number RO25A007880 with feedback category 'Engine'."
+      - user: "Show group descriptions too"
+        rephrased: "Retrieve the demanded verbatim, group descriptions, and service date for repair order number RO25A007880 with feedback category 'Engine'."
+    
+    Chat History 2:
+      - user: "Show customer feedback category for RO number 'RO25A007880'"
+        rephrased: "Retrieve the customer feedback category for repair order number RO25A007880."
+      - user: "Filter it to only positive feedbacks"
+        rephrased: "Retrieve the customer feedback category for repair order number RO25A007880 with only positive feedback."
+      - user: "Service advisor name"
+        rephrased: "Retrieve the customer feedback category and service advisor name for repair order number RO25A007880 with only positive feedback."
+      - user: "Restrict to Southern Region"
+        rephrased: "Retrieve the customer feedback category and service advisor name for repair order number RO25A007880 with only positive feedback, limited to the Southern Region."
+    
+    Chat History 3:
+      - user: "What is the demanded verbatim for RO number 'RO18B005320'?"
+        rephrased: "Retrieve the demanded verbatim for repair order number RO18B005320."
+      - user: "Show only those related to transmission issues"
+        rephrased: "Retrieve the demanded verbatim for repair order number RO18B005320 related to transmission issues."
+    
+    Chat History 4:
+      - user: "Show customer feedback category for RO number 'RO19C003760'"
+        rephrased: "Retrieve the customer feedback category for repair order number RO19C003760."
+      - user: "Only include feedbacks rated as negative"
+        rephrased: "Retrieve the customer feedback category for repair order number RO19C003760 with only negative feedback."
+      - user: "Add technician name to the output"
+        rephrased: "Retrieve the customer feedback category and technician name for repair order number RO19C003760 with only negative feedback."
 
-  - Key Parameters:  
-    {key_parameters}
-
-  - Important Phrases:  
-    {keyphrases}
-
-  - Table Metadata:  
-    {table_metadata}
   Expected JSON Output Format:
-  - Return only the JSON object.
-  - Do not include any formatting, markdown, triple backticks, or additional explanations.
-  - The output must start directly with the curly braces character and end with curly braces.
-  {{
-    "rephrased_query": "<your rephrased query here>",
-    "tables_chosen": ["<table_1>", "<table_2>", "..."]
-  }}
+    - Return only the JSON object.
+    - Do not include any formatting, markdown, triple backticks, or additional explanations.
+    - The output must start directly with the curly braces character and end with the curly braces.
+    {{
+      "rephrased_query" : "<your rephrased query here>"
+    }}
