@@ -731,7 +731,11 @@ function updatePageContent(data) {
     // Always update these elements regardless of success/failure
     userQueryDisplay.querySelector('span').textContent = data.user_query || "";
     sqlQueryContent.textContent = data.query || "No SQL query available";
-
+    // ✅ Clear previous chart
+    const chartContainer = document.getElementById("chart-container");
+    if (chartContainer) {
+        chartContainer.innerHTML = "";
+    }
     // Clear containers
     tablesContainer.innerHTML = "";
     xlsxbtn.innerHTML = "";
@@ -747,7 +751,7 @@ function updatePageContent(data) {
     const faqBtn = document.createElement("button");
     faqBtn.textContent = "Add to FAQs";
     faqBtn.id = "add-to-faqs-btn";
-    faqBtn.onclick = addToFAQs(selectedSection);
+    faqBtn.onclick = () => addToFAQs(selectedSection);
     faqBtn.style.display = "block";
 
     const emailBtn = document.createElement("button");

@@ -10,7 +10,7 @@ from configure import gauge_config
 from pydantic import BaseModel
 from io import BytesIO, StringIO
 from langchain.chains.openai_tools import create_extraction_chain_pydantic
-from langchain_core.pydantic_v1 import Field
+from pydantic import Field
 from langchain_openai import ChatOpenAI
 from newlangchain_utils import *
 from dotenv import load_dotenv
@@ -20,59 +20,25 @@ from starlette.middleware.sessions import SessionMiddleware  # Correct import
 from fastapi.middleware.cors import CORSMiddleware
 from azure.storage.blob import BlobServiceClient
 from starlette.middleware.base import BaseHTTPMiddleware
-import logging
-from logging.config import dictConfig
+
+
 import automotive_wordcloud_analysis as awa
 import zipfile
 from wordcloud import WordCloud
 from table_details import get_table_details, get_table_metadata  # Importing the function
 from openai import AzureOpenAI
 from langchain_openai import AzureChatOpenAI
-
+from logger_config import configure_logging, log_execution_time
+import logging
 # Configure logging
-logging.basicConfig(level=logging.INFO)
-
-class LoggingMiddleware(BaseHTTPMiddleware):
-    async def dispatch(self, request: Request, call_next):
-        # Log the request details
-        logging.info(f"Request: {request.method} {request.url}")
-        
-        # Call the next middleware or endpoint
-        response = await call_next(request)
-        
-        # Log the response details
-        logging.info(f"Response status: {response.status_code}")
-        
-        return response
-# Logging configuration
-LOGGING_CONFIG = {
-    "version": 1,
-    "disable_existing_loggers": False,
-    "formatters": {
-        "default": {"format": "%(asctime)s - %(name)s - %(levelname)s - %(message)s"},
-        "json": {"format": '{"timestamp": "%(asctime)s", "logger": "%(name)s", "level": "%(levelname)s", "message": "%(message)s"}'}
-    },
-    "handlers": {
-        "console": {"class": "logging.StreamHandler", "formatter": "default"},
-        "file": {"class": "logging.FileHandler", "filename": "app.log", "formatter": "json"}
-    },
-    "loggers": {
-        "uvicorn": {"handlers": ["console"], "level": "INFO", "propagate": False},
-        "app": {"handlers": ["console", "file"], "level": "DEBUG", "propagate": False}
-    },
-    "root": {
-        "handlers": ["console"],
-        "level": "INFO"
-    }
-}
-dictConfig(LOGGING_CONFIG)
-logger = logging.getLogger("app")
-
 load_dotenv()  # Load environment variables from .env file
+# Initialize logging before creating the app
+configure_logging()
 
+# Create main application logger
+logger = logging.getLogger("app")
 app = FastAPI()
 app.add_middleware(SessionMiddleware, secret_key="your-secret-key")
-app.add_middleware(LoggingMiddleware)
 # Set up static files and templates
 templates = Jinja2Templates(directory="templates")
 app.mount("/static", StaticFiles(directory="static"), name="static")
@@ -82,9 +48,9 @@ AZURE_CONTAINER_NAME = os.getenv('AZURE_CONTAINER_NAME')
 # Initialize the BlobServiceClient
 try:
     blob_service_client = BlobServiceClient.from_connection_string(AZURE_STORAGE_CONNECTION_STRING)
-    print("Blob service client initialized successfully.")
+    logger.info("Azure Blob Initialised for FAQs")
 except Exception as e:
-    print(f"Error initializing BlobServiceClient: {e}")
+    logger.error(f"Error initializing BlobServiceClient: {e}")
     # Handle the error appropriately, possibly exiting the application
     raise  # Re-raise the exception to prevent the app from starting
 from pydantic import BaseModel
@@ -157,20 +123,7 @@ def download_as_excel(data: pd.DataFrame, filename: str = "data.xlsx"):
         data.to_excel(writer, index=False, sheet_name='Sheet1')
     output.seek(0)  # Reset the pointer to the beginning of the stream
     return output
-@app.get("/get_prompt")
-async def get_prompt(type: str):
-    if type == "interpretation":
-        filename = "chatbot_prompt.yaml"
-    elif type == "langchain":
-        filename = "final_prompt.txt"
-    else:
-        return "Invalid prompt type", 400
-    try:
-        with open(filename, "r") as f:
-            prompt = f.read()
-        return prompt
-    except FileNotFoundError:
-        return "Prompt file not found", 404
+
 def create_gauge_chart_json(title, value, min_val=0, max_val=100, color="blue", subtext="%"):
     """
     Creates a gauge chart using Plotly and returns it as a JSON string.
@@ -253,7 +206,7 @@ class QueryInput(BaseModel):
     query: str
 
 @app.post("/add_to_faqs")
-async def add_to_faqs(data: QueryInput, subject:str):
+async def add_to_faqs(data: QueryInput, subject:str, request: Request):
     """
     Adds a user query to the FAQ CSV file on Azure Blob Storage.
 
@@ -352,7 +305,7 @@ def generate_chart_figure(data_df: pd.DataFrame, x_axis: str, y_axis: str, chart
             
         return fig
     except Exception as e:
-        print(f"Error generating {chart_type} chart: {str(e)}")
+        logger.error(f"Error generating {chart_type} chart: {str(e)}")
         raise
 
 class ChartRequest(BaseModel):
@@ -367,56 +320,59 @@ async def generate_chart(request: ChartRequest):
     Generates a chart based on the provided request data.
     Handles both numeric charts and text-based Word Cloud.
     """
-    try:
-        table_name = request.table_name
-        x_axis = request.x_axis
-        y_axis = request.y_axis
-        chart_type = request.chart_type
+    logger.info(f"Endpoint: /generate-chart - Chart request: {request.dict()}")
+    with log_execution_time("generate_chart"):
+        try:
+            table_name = request.table_name
+            x_axis = request.x_axis
+            y_axis = request.y_axis
+            chart_type = request.chart_type
 
-        print(f"Received Request: {request.dict()}")
 
-        # Validate table exists
-        if "tables_data" not in session_state or table_name not in session_state["tables_data"]:
-            raise HTTPException(status_code=404, detail=f"No data found for table {table_name}")
+            # Validate table exists
+            if "tables_data" not in session_state or table_name not in session_state["tables_data"]:
+                raise HTTPException(status_code=404, detail=f"No data found for table {table_name}")
 
-        data_df = session_state["tables_data"][table_name]
-        
-        # Validate columns exist
-        if x_axis not in data_df.columns:
-            raise HTTPException(status_code=400, detail=f"Column '{x_axis}' not found in data")
+            data_df = session_state["tables_data"][table_name]
             
-        # Skip y_axis validation for Word Cloud
-        if chart_type != "Word Cloud" and y_axis not in data_df.columns:
-            raise HTTPException(status_code=400, detail=f"Column '{y_axis}' not found in data")
+            # Validate columns exist
+            if x_axis not in data_df.columns:
+                raise HTTPException(status_code=400, detail=f"Column '{x_axis}' not found in data")
+                
+            # Skip y_axis validation for Word Cloud
+            if chart_type != "Word Cloud" and y_axis not in data_df.columns:
+                raise HTTPException(status_code=400, detail=f"Column '{y_axis}' not found in data")
 
-        # Data processing based on chart type
-        if chart_type == "Word Cloud":
-            # Ensure we have text data for word cloud
-            if not pd.api.types.is_string_dtype(data_df[x_axis]):
-                data_df[x_axis] = data_df[x_axis].astype(str)
-        else:
-            # For other charts, convert y-axis to numeric
-            try:
-                data_df[y_axis] = pd.to_numeric(data_df[y_axis], errors='coerce')
-                data_df = data_df.dropna(subset=[y_axis])
-                if len(data_df) == 0:
-                    raise ValueError("No valid numeric data available after conversion")
-            except Exception as e:
-                raise HTTPException(status_code=400, detail=f"Error processing numeric data: {str(e)}")
+            # Data processing based on chart type
+            if chart_type == "Word Cloud":
+                # Ensure we have text data for word cloud
+                if not pd.api.types.is_string_dtype(data_df[x_axis]):
+                    data_df[x_axis] = data_df[x_axis].astype(str)
+            else:
+                # For other charts, convert y-axis to numeric
+                try:
+                    data_df[y_axis] = pd.to_numeric(data_df[y_axis], errors='coerce')
+                    data_df = data_df.dropna(subset=[y_axis])
+                    if len(data_df) == 0:
+                        raise ValueError("No valid numeric data available after conversion")
+                except Exception as e:
+                    raise HTTPException(status_code=400, detail=f"Error processing numeric data: {str(e)}")
 
-        # Generate the chart
-        fig = generate_chart_figure(data_df, x_axis, y_axis, chart_type)
-        
-        if fig is None:
-            raise HTTPException(status_code=400, detail="Unsupported chart type selected")
+            # Generate the chart
+            fig = generate_chart_figure(data_df, x_axis, y_axis, chart_type)
             
-        return JSONResponse(content={"chart": fig.to_json()})
+            if fig is None:
+                raise HTTPException(status_code=400, detail="Unsupported chart type selected")
+            logger.info(f"Generating {request.chart_type} chart")
+            return JSONResponse(content={"chart": fig.to_json()})
 
-    except HTTPException as he:
-        raise he
-    except Exception as e:
-        traceback.print_exc()
-        raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
+        except HTTPException as he:
+
+            raise he
+        except Exception as e:
+            logger.error(f"Chart generation failed: {str(e)}", exc_info=True)
+
+            raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
 
 @app.get("/download-table/")
 @app.get("/download-table")
@@ -430,25 +386,29 @@ async def download_table(table_name: str):
     Returns:
         StreamingResponse: A streaming response containing the Excel file.
     """
-    # Check if the requested table exists in session state
-    if "tables_data" not in session_state or table_name not in session_state["tables_data"]:
-        raise HTTPException(status_code=404, detail=f"Table {table_name} data not found.")
+    logger.info("Endpoint: /download_table ")
+    with log_execution_time("download-table"):
+        try:
+            # Check if the requested table exists in session state
+            if "tables_data" not in session_state or table_name not in session_state["tables_data"]:
+                raise HTTPException(status_code=404, detail=f"Table {table_name} data not found.")
 
-    # Get the table data from session_state
-    data = session_state["tables_data"][table_name]
+            # Get the table data from session_state
+            data = session_state["tables_data"][table_name]
 
-    # Generate Excel file
-    output = download_as_excel(data, filename=f"{table_name}.xlsx")
+            # Generate Excel file
+            output = download_as_excel(data, filename=f"{table_name}.xlsx")
 
-    # Return the Excel file as a streaming response
-    response = StreamingResponse(
-        output,
-        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-    )
-    response.headers["Content-Disposition"] = f"attachment; filename={table_name}.xlsx"
-    return response
+            # Return the Excel file as a streaming response
+            response = StreamingResponse(
+                output,
+                media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            )
+            response.headers["Content-Disposition"] = f"attachment; filename={table_name}.xlsx"
+            return response
 
-
+        except Exception as e:
+            logger.error(f"error while downloading table: {e}")
 # Replace APIRouter with direct app.post
 def format_number(x):
     if isinstance(x, int):  # Check if x is an integer
@@ -468,6 +428,7 @@ async def transcribe_audio(file: UploadFile = File(...)):
     Returns:
         JSONResponse: A JSON response containing the transcription or an error message.
     """
+    logger.info("Audio transcription started")
     try:
         # Check if API key is available
         if not AZURE_OPENAI_API_KEY:
@@ -514,7 +475,7 @@ async def get_questions(subject: str, request: Request):
     try:
         # Check if the blob exists
         if not blob_client.exists():
-            print(f"file not found {csv_file_name}")
+            logger.error(f"file not found {csv_file_name}")
             return JSONResponse(
                 content={"error": f"The file {csv_file_name} does not exist."}, status_code=404
             )
@@ -549,10 +510,10 @@ def load_prompts(filename:str):
         with open(filename, "r", encoding="utf-8") as file:
             return yaml.safe_load(file)
     except Exception as e:
-        print(f"Error reading prompts file: {e}")
+        logger.error(f"Error reading prompts file: {e}")
         return {}
     
-
+         
 # @app.post("/submit_feedback/")
 # @app.post("/submit_feedback")
 # async def submit_feedback(request: Request):
@@ -705,202 +666,209 @@ async def submit_query(
     records_per_page: int = Query(10),
     model: Optional[str] = Form(AZURE_DEPLOYMENT_NAME)
 ):
-    logger.info(f"Received /submit request with query: {user_query}, section: {section}")
-    
+    logger.info(f"Endpoint: /submit - Received query: {user_query}, Section: {section}")
+    with log_execution_time("submit_query"):    
     # Initialize response structure
-    response_data = {
-        "user_query": user_query,
-        "query": "",
-        "tables": [],
-        "llm_response": "",
-        "chat_response": "",
-        "history": session_state.get('messages', []),
-        "interprompt": "",
-        "langprompt": "",
-        "error": None
-    }
+        response_data = {
+            "user_query": user_query,
+            "query": "",
+            "tables": [],
+            "llm_response": "",
+            "chat_response": "",
+            "history": session_state.get('messages', []),
+            "interprompt": "",
+            "langprompt": "",
+            "error": None
+        }
 
-    try:
-        # Reset per-request variables
-        unified_prompt = ""
-        final_prompt = ""
-        llm_reframed_query = ""
-        
-        # Get current question type from session
-        current_question_type = request.session.get("current_question_type", "generic")
-        prompts = request.session.get("prompts", load_prompts("generic_prompt.yaml"))
-        
-        # Handle session messages
-        if 'messages' not in session_state:
-            session_state['messages'] = []
-        
-        session_state['messages'].append({"role": "user", "content": user_query})
-        chat_history = "\n".join(
-            f"{msg['role']}: {msg['content']}" for msg in session_state['messages'][-10:]
-        )
-
-        # Step 1: Generate unified prompt based on question type
         try:
-            if current_question_type == "usecase":
-                key_parameters = get_key_parameters()
-                keyphrases = get_keyphrases()
-                unified_prompt = prompts["unified_prompt"].format(
-                    user_query=user_query,
-                    chat_history=chat_history,
-                    key_parameters=key_parameters,
-                    keyphrases=keyphrases
-                )
-                
-                llm_reframed_query = llm.invoke(unified_prompt).content.strip()
-                intent_result = intent_classification(llm_reframed_query)
-                
-                if not intent_result:
-                    raise HTTPException(
-                        status_code=400,
-                        detail="Please rephrase or add more details to your question"
-                    )
-                
-                chosen_tables = intent_result["tables"]
-                selected_business_rule = get_business_rule(intent_result["intent"])
-                
-            elif current_question_type == "generic":
-                tables_metadata = get_table_metadata(selected_subject=section)
-                unified_prompt = prompts["unified_prompt"].format(
-                    user_query=user_query,
-                    chat_history=chat_history,
-                    key_parameters=get_key_parameters(),
-                    keyphrases=get_keyphrases(),
-                    table_metadata=tables_metadata
-                )
-                
-                llm_response_str = llm.invoke(unified_prompt).content.strip()
-                try:
-                    llm_result = json.loads(llm_response_str)
-                    llm_reframed_query = llm_result.get("rephrased_query", "")
-                    chosen_tables = llm_result.get("tables_chosen", [])
-                    selected_business_rule = ""
-                except json.JSONDecodeError:
-                    raise HTTPException(
-                        status_code=500,
-                        detail="Failed to parse LLM response"
-                    )
+            # Reset per-request variables
+            unified_prompt = ""
+            final_prompt = ""
+            llm_reframed_query = ""
             
-            response_data["llm_response"] = llm_reframed_query
-            response_data["interprompt"] = unified_prompt
+            # Get current question type from session
+            current_question_type = request.session.get("current_question_type", "generic")
+            prompts = request.session.get("prompts", load_prompts("generic_prompt.yaml"))
+            logger.debug(f"Current question type: {request.session.get('current_question_type')}")
+            # Handle session messages
+            if 'messages' not in session_state:
+                session_state['messages'] = []
             
-        except Exception as e:
-            logger.error(f"Prompt generation error: {str(e)}")
-            raise HTTPException(
-                status_code=500,
-                detail=f"Prompt generation failed: {str(e)}"
+            session_state['messages'].append({"role": "user", "content": user_query})
+            chat_history = "\n".join(
+                f"{msg['role']}: {msg['content']}" for msg in session_state['messages'][-10:]
             )
 
-        # Step 2: Invoke LangChain
-        try:
-            relationships = find_relationships_for_tables(chosen_tables, 'table_relation.json')
-            table_details = get_table_details(selected_subject=section, table_name=chosen_tables)
-            
-            response, chosen_tables, tables_data, agent_executor, final_prompt = invoke_chain(
-                llm_reframed_query,
-                session_state['messages'],
-                model,
-                section,
-                database,
-                table_details,
-                selected_business_rule,
-                current_question_type,
-                relationships
-            )
-            
-            response_data["langprompt"] = str(final_prompt)
-            
-            if isinstance(response, str):
-                response_data["query"] = response
-                session_state['generated_query'] = response
-            else:
-                response_data["query"] = response.get("query", "")
-                session_state['generated_query'] = response.get("query", "")
-                session_state['chosen_tables'] = chosen_tables
-                session_state['tables_data'] = tables_data
-
-        except Exception as e:
-            logger.error(f"LangChain invocation error: {str(e)}", exc_info=True)
-            raise HTTPException(
-                status_code=500,
-                detail=f"Query execution failed: {str(e)}"
-            )
-
-        # Step 3: Process results
-        if chosen_tables and 'tables_data' in session_state:
+            # Step 1: Generate unified prompt based on question type
             try:
-                # Format numeric columns
-                for table_name, df in session_state['tables_data'].items():
-                    for col in df.select_dtypes(include=['number']).columns:
-                        session_state['tables_data'][table_name][col] = df[col].apply(format_number)
+                if current_question_type == "usecase":
+                    key_parameters = get_key_parameters()
+                    keyphrases = get_keyphrases()
+                    unified_prompt = prompts["unified_prompt"].format(
+                        user_query=user_query,
+                        chat_history=chat_history,
+                        key_parameters=key_parameters,
+                        keyphrases=keyphrases
+                    )
+                    logger.info("Generating rephrased query")
+
+                    llm_reframed_query = llm.invoke(unified_prompt).content.strip()
+                    intent_result = intent_classification(llm_reframed_query)
+                    logger.info("Intent Classification Result: ", intent_result)
+                    if not intent_result:
+                        raise HTTPException(
+                            status_code=400,
+                            detail="Please rephrase or add more details to your question"
+                        )
+                    
+                    chosen_tables = intent_result["tables"]
+                    logger.info(f"Chosen tables: {chosen_tables}")
+                    selected_business_rule = get_business_rule(intent_result["intent"])
+                    logger.info("Business rules added")
+                elif current_question_type == "generic":
+                    tables_metadata = get_table_metadata()
+                    unified_prompt = prompts["unified_prompt"].format( 
+                        user_query=user_query,
+                        chat_history=chat_history,
+                        key_parameters=get_key_parameters(),
+                        keyphrases=get_keyphrases(),
+                        table_metadata=tables_metadata
+                    )
+                    
+                    llm_response_str = llm.invoke(unified_prompt).content.strip()
+                    try:
+                        llm_result = json.loads(llm_response_str)
+                        llm_reframed_query = llm_result.get("rephrased_query", "")
+                        chosen_tables = ["mh_ad_ai_dimension","mh_model_master","mh_ro_hdr_details","mh_ro_parts","mh_ro_labour", "mh_cust_verbatim"]
+                        logger.info(f"Chosen tables: {chosen_tables}")
+
+                        selected_business_rule = ""
+                    except json.JSONDecodeError:
+                        raise HTTPException(
+                            status_code=500,
+                            detail="Failed to parse LLM response"
+                        )
                 
-                # Prepare table HTML
-                response_data["tables"] = prepare_table_html(
-                    session_state['tables_data'],
-                    page,
-                    records_per_page
-                )
-                
-                # Generate insights if data exists
-                data_preview = next(iter(session_state['tables_data'].values())).head(5).to_string(index=False)
-                response_data["chat_response"] = ""  # Placeholder for actual insights
-                
+                response_data["llm_response"] = llm_reframed_query
+                response_data["interprompt"] = unified_prompt
+                logger.debug(f"Interprated Query: {llm_reframed_query}")
             except Exception as e:
-                logger.error(f"Data processing error: {str(e)}")
-                response_data["chat_response"] = f"Data retrieved but processing failed: {str(e)}"
+                logger.error(f"Prompt generation error: {str(e)}")
+                raise HTTPException(
+                    status_code=500,
+                    detail=f"Prompt generation failed: {str(e)}"
+                )
 
-        # Append successful response to chat history
-        session_state['messages'].append({
-            "role": "assistant",
-            "content": response_data["chat_response"]
-        })
+            # Step 2: Invoke LangChain
+            try:
+                relationships = find_relationships_for_tables(chosen_tables, 'table_relation.json')
+                table_details = get_table_details(table_name=chosen_tables)
+                logger.info("Table relationships added, calling invoke chain")
+                response, chosen_tables, tables_data, agent_executor, final_prompt = invoke_chain(
+                    llm_reframed_query,
+                    session_state['messages'],
+                    model,
+                    section,
+                    database,
+                    table_details,
+                    selected_business_rule,
+                    current_question_type,
+                    relationships
+                )
+                logger.debug(f"LangChain response: {response}")
+                response_data["langprompt"] = str(final_prompt)
+                
+                if isinstance(response, str):
+                    response_data["query"] = response
+                    session_state['generated_query'] = response
+                else:
+                    response_data["query"] = response.get("query", "")
+                    session_state['generated_query'] = response.get("query", "")
+                    session_state['chosen_tables'] = chosen_tables
+                    session_state['tables_data'] = tables_data
 
-        return JSONResponse(content=response_data)
+            except Exception as e:
+                logger.error(f"LangChain invocation error: {str(e)}", exc_info=True)
+                raise HTTPException(
+                    status_code=500,
+                    detail=f"Query execution failed: {str(e)}"
+                )
+            logger.info(f"Processed {len(chosen_tables)} tables")
 
-    except HTTPException as he:
-        # Capture error details
-        response_data.update({
-            "chat_response": f"Error: {he.detail}",
-            "error": str(he.detail),
-            "history": session_state.get('messages', []),
-            "langprompt": str(final_prompt) if 'final_prompt' in locals() else "Not generated due to error",
-            "interprompt": unified_prompt if 'unified_prompt' in locals() else "Not generated due to error"
-        })
-        
-        session_state['messages'].append({
-            "role": "assistant",
-            "content": f"Error: {he.detail}"
-        })
-        
-        return JSONResponse(
-            content=response_data,
-            status_code=he.status_code
-        )
-        
-    except Exception as e:
-        # Unexpected errors
-        logger.error(f"Unexpected error: {str(e)}", exc_info=True)
-        response_data.update({
-            "chat_response": "An unexpected error occurred",
-            "error": str(e),
-            "history": session_state.get('messages', []),
-            "langprompt": str(final_prompt) if 'final_prompt' in locals() else "Not generated due to error",
-            "interprompt": unified_prompt if 'unified_prompt' in locals() else "Not generated due to error"
-        })
-        
-        session_state['messages'].append({
-            "role": "assistant",
-            "content": "An unexpected error occurred"
-        })
-        
-        return JSONResponse(
-            content=response_data,
-            status_code=500
-        )
+            # Step 3: Process results
+            if chosen_tables and 'tables_data' in session_state:
+                try:
+                    # Format numeric columns
+                    for table_name, df in session_state['tables_data'].items():
+                        for col in df.select_dtypes(include=['number']).columns:
+                            session_state['tables_data'][table_name][col] = df[col].apply(format_number)
+                    
+                    # Prepare table HTML
+                    response_data["tables"] = prepare_table_html(
+                        session_state['tables_data'],
+                        page,
+                        records_per_page
+                    )
+                    
+                    # Generate insights if data exists
+                    # data_preview = next(iter(session_state['tables_data'].values())).head(5).to_string(index=False)
+                    response_data["chat_response"] = ""  # Placeholder for actual insights
+                    
+                except Exception as e:
+                    logger.error(f"Data processing error: {str(e)}")
+                    response_data["chat_response"] = f"Data retrieved but processing failed: {str(e)}"
+
+            # Append successful response to chat history
+            session_state['messages'].append({
+                "role": "assistant",
+                "content": response_data["chat_response"]
+            })
+
+            return JSONResponse(content=response_data)
+
+        except HTTPException as he:
+            logger.error(f"Error in submit_query: {he.detail}", exc_info=True)
+
+            # Capture error details
+            response_data.update({
+                "chat_response": f"Error: {he.detail}",
+                "error": str(he.detail),
+                "history": session_state.get('messages', []),
+                "langprompt": str(final_prompt) if 'final_prompt' in locals() else "Not generated due to error",
+                "interprompt": unified_prompt if 'unified_prompt' in locals() else "Not generated due to error"
+            })
+            
+            session_state['messages'].append({
+                "role": "assistant",
+                "content": f"Error: {he.detail}"
+            })
+            
+            return JSONResponse(
+                content=response_data,
+                status_code=he.status_code
+            )
+            
+        except Exception as e:
+            # Unexpected errors
+            logger.error(f"Unexpected error: {str(e)}", exc_info=True)
+            response_data.update({
+                "chat_response": "An unexpected error occurred",
+                "error": str(e),
+                "history": session_state.get('messages', []),
+                "langprompt": str(final_prompt) if 'final_prompt' in locals() else "Not generated due to error",
+                "interprompt": unified_prompt if 'unified_prompt' in locals() else "Not generated due to error"
+            })
+            
+            session_state['messages'].append({
+                "role": "assistant",
+                "content": "An unexpected error occurred"
+            })
+            
+            return JSONResponse(
+                content=response_data,
+                status_code=500
+            )
 
 # Replace APIRouter with direct app.post
 
@@ -917,7 +885,6 @@ async def reset_session(request: Request):
     request.session.clear()
     request.session["current_question_type"] = "generic"
     request.session["prompts"] = load_prompts("generic_prompt.yaml")
-    print("now, the que type is: ",request.session.get("current_question_type"))
     return {"message": "Session state cleared successfully"}, 200
 
 def prepare_table_html(tables_data, page, records_per_page):
@@ -937,8 +904,7 @@ def prepare_table_html(tables_data, page, records_per_page):
         total_records = len(data)
         total_pages = (total_records + records_per_page - 1) // records_per_page
         html_table = display_table_with_styles(data, table_name, page, records_per_page)
-        print("html table: ", data)
-        print("end of table data")
+        logger.debug("Returned table data",exc_info=1)
         tables_html.append({
             "table_name": table_name,
             "table_html": html_table,
@@ -961,20 +927,29 @@ async def read_root(request: Request):
     Returns:
         TemplateResponse: The rendered HTML template.
     """
+    logger.info("Endpoint: / - Loading root page")
+    with log_execution_time("read_root"):
+        try:
     # Extract table names dynamically
-    tables = []
-    # Only set defaults if not already set
-    if "current_question_type" not in request.session:
-        request.session["current_question_type"] = "generic"
-        request.session["prompts"] = load_prompts("generic_prompt.yaml")
+            logger.debug("Extracting table names")
 
-    # Pass dynamically populated dropdown options to the template
-    return templates.TemplateResponse("index.html", {
-        "request": request,
-        "databases": databases,                                     
-        "tables": tables,        # Table dropdown based on database selection
-        "question_dropdown": question_dropdown.split(','),  # Static questions from env
-    })
+            tables = []
+            if "prompts" in request.session:
+                del request.session["prompts"]
+            # Only set defaults if not already set
+            if "current_question_type" not in request.session:
+                request.session["current_question_type"] = "generic"
+                request.session["prompts"] = load_prompts("generic_prompt.yaml")
+
+            # Pass dynamically populated dropdown options to the template
+            return templates.TemplateResponse("index.html", {
+                "request": request,
+                "databases": databases,                                     
+                "tables": tables,        # Table dropdown based on database selection
+                "question_dropdown": question_dropdown.split(','),  # Static questions from env
+            })
+        except Exception as e:
+            logger.error(f"Error in read_root: {str(e)}", exc_info=True)
 
 # Table data display endpoint
 def display_table_with_styles(data, table_name, page_number, records_per_page):
@@ -1064,10 +1039,12 @@ class QuestionTypeRequest(BaseModel):
 async def set_question_type(payload: QuestionTypeRequest, request: Request):
     current_question_type = payload.question_type
     filename = "generic_prompt.yaml" if current_question_type == "generic" else "chatbot_prompt.yaml"
+    # To force reload, remove the session key before loading
+    
+
     prompts = load_prompts(filename)
     request.session["current_question_type"] = current_question_type
     request.session["prompts"] = prompts  # If you want to store prompts per session
 
-    print("Received question type:", current_question_type)
     return JSONResponse(content={"message": "Question type set", "prompts": prompts})
 

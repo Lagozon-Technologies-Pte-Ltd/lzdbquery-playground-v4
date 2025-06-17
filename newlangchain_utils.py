@@ -9,16 +9,15 @@ import os
 import configure
 from operator import itemgetter
 from langchain.chains.openai_tools import create_extraction_chain_pydantic 
-from langchain_core.pydantic_v1 import BaseModel, Field
 from langchain_openai import ChatOpenAI 
 #from  langchain_openai.chat_models import with_structured_output
 import json
-from langchain.embeddings import OpenAIEmbeddings
-from langchain.vectorstores import Chroma
-from langchain.prompts.example_selector import SemanticSimilarityExampleSelector
+from langchain_community.vectorstores import Chroma
+from langchain_core.example_selectors import SemanticSimilarityExampleSelector
 from openai import AzureOpenAI
 from langchain_openai import AzureChatOpenAI
-from langchain.embeddings import AzureOpenAIEmbeddings 
+from langchain_openai import AzureOpenAIEmbeddings
+
 
 
 AZURE_OPENAI_API_KEY = os.environ.get('AZURE_OPENAI_API_KEY')
@@ -58,8 +57,9 @@ from langchain_community.utilities.sql_database import SQLDatabase
 #from langchain_community.agent_toolkits.sql.toolkit import SQLDatabaseToolkit
 from langchain.chains import create_sql_query_chain
 from langchain_openai import ChatOpenAI
-from langchain_community.tools.sql_database.tool import QuerySQLDataBaseTool
-from langchain.memory import ChatMessageHistory
+from langchain_community.tools import QuerySQLDataBaseTool
+
+from langchain_community.chat_message_histories import ChatMessageHistory
 from operator import itemgetter
 from google.oauth2 import service_account
 import json
@@ -371,20 +371,19 @@ def get_chain(question, _messages, selected_model, selected_subject, selected_da
             ]
         )
     final_prompt = final_prompt1
-    print("langchain prompt: ", final_prompt)
+    
     # if selected_database=="GCP":
     #         db = BigQuerySQLDatabase()
     # elif selected_database=="PostgreSQL-Azure":
     #     db = get_postgres_db(selected_subject, db_tables)
     if selected_database=="Azure SQL":
         db = get_sql_db()
-    print("start",selected_database)
+    
     print("Generate Query Starting")
 
     #     final_prompt=final_prompt2    
     generate_query = create_sql_query_chain(llm, db, final_prompt)
     SQL_Statement = generate_query.invoke({"question": question, "messages": _messages})
-    print(f"Generated SQL Statement before execution: {SQL_Statement}")
 
     # Override QuerySQLDataBaseTool validation
     class CustomQuerySQLDatabaseTool(QuerySQLDataBaseTool):
@@ -396,7 +395,8 @@ def get_chain(question, _messages, selected_model, selected_subject, selected_da
     execute_query = CustomQuerySQLDatabaseTool(db=db)
     
     chain = (
-        RunnablePassthrough.assign(table_names_to_use=lambda _: db.get_table_names()) |  # Get table names
+        RunnablePassthrough.assign(table_names_to_use=lambda _: db.get_usable_table_names())
+|       # Get table names
         RunnablePassthrough.assign(query=generate_query).assign(
             result=itemgetter("query")
         )
@@ -409,12 +409,12 @@ def get_chain(question, _messages, selected_model, selected_subject, selected_da
 
 
 def invoke_chain(question, messages, selected_model, selected_subject, selected_database, table_info, selected_business_rule, question_type, relationships):
-    print(question, messages, selected_model, selected_subject, selected_database)
+    
     response = None
     SQL_Statement = None
     final_prompt = None
     try:
-        print('Model used:', selected_model)
+        
         history = create_history(messages)
         chain, SQL_Statement, db, final_prompt = get_chain(
             question, history.messages, selected_model, selected_subject,
@@ -429,13 +429,12 @@ def invoke_chain(question, messages, selected_model, selected_subject, selected_
             "messages": history.messages,
             "table_details": table_info
         })
-        print("Question:", question)
-        print("Response:", response)
+
 
         tables_data = {}
         for table in db_tables:
             query = response["query"]
-            print(f"Executing SQL Query: {query}")
+            
             if selected_database == "GCP":
                 result_json = db.run(query)
                 df = pd.DataFrame(result_json)
@@ -451,7 +450,7 @@ def invoke_chain(question, messages, selected_model, selected_subject, selected_
             elif selected_database == "Azure SQL":
                 print("now running via azure sql")
                 result = db._engine.execute(query)
-                print("result is: ", result)
+                
                 rows = result.fetchall()
                 columns = result.keys()
                 df = pd.DataFrame(rows, columns=columns)
@@ -492,7 +491,6 @@ def get_business_glossary_text():
     
     # Join all lines with newline characters
     glossary_text = '\n'.join(glossary_lines)
-    print(glossary_text)
     return glossary_text
 
 def get_key_parameters():
