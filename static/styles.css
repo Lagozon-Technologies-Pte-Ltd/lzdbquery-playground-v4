@@ -13,7 +13,38 @@ body {
     color: #21126b;
     font-size: 18px;
 }
+/* Pointer cursors for clickable elements */
+a, button, input[type="button"], input[type="submit"], 
+input[type="reset"], [role="button"], .btn, 
+.tab button, .switch, .close-btn, .page-item a,
+.download-btn, #send-button, #chat-mic-button,
+#view-sql-query-btn, #add-to-faqs-btn, #send-email-btn,
+#interpBtn, #langchainBtn, #generate-chart-button {
+    cursor: pointer !important;
+}
 
+/* Text input cursors */
+input[type="text"], input[type="search"], input[type="email"], 
+input[type="password"], input[type="number"], input[type="tel"],
+textarea, [contenteditable] {
+    cursor: text;
+}
+
+/* Table specific cursors */
+.data-table tr {
+    cursor: default;
+}
+
+/* Disabled elements */
+[disabled], :disabled {
+    cursor: not-allowed !important;
+}
+
+/* Links within messages */
+.message-content a {
+    cursor: pointer;
+    text-decoration: underline;
+}
 .query-details-header {
     display: flex;
     align-items: center;
@@ -350,7 +381,76 @@ input:checked+.slider:before {
     /* font-size: 16px; */
     transition: all 0.3sease-in-out;
 }
+/* Action buttons */
+.action-btn {
+    margin: 5px;
+    padding: 8px 12px;
+    background-color: #4a6fa5;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+}
 
+.action-btn:hover:not(:disabled) {
+    background-color: #3a5a80;
+}
+
+.action-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.action-icon {
+    width: 16px;
+    height: 16px;
+}
+
+.copy-btn {
+    background-color: #6c757d;
+}
+
+/* No data/error message */
+.no-data-message {
+    padding: 20px;
+    background-color: #f8f9fa;
+    border-radius: 4px;
+    text-align: center;
+    color: #6c757d;
+}
+
+.error-details {
+    margin-top: 10px;
+    color: #dc3545;
+}
+
+.error-details summary {
+    cursor: pointer;
+    font-weight: bold;
+}
+
+/* Feedback buttons */
+.feedback-btn {
+    border: none;
+    padding: 5px 10px;
+    margin: 0 5px;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.feedback-btn.like {
+    background-color: #e6f7e6;
+    color: green;
+}
+
+.feedback-btn.dislike {
+    background-color: #fce8e8;
+    color: red;
+}
 #query-results {
     margin-top: 20px;
     min-height: 520px;

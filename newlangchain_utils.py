@@ -1,24 +1,20 @@
 import os, ast
 import pandas as pd
-from google.cloud import bigquery
+# from google.cloud import bigquery
 import datetime
 from dotenv import load_dotenv
-from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder,FewShotChatMessagePromptTemplate,PromptTemplate # type: ignore
+# from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder,FewShotChatMessagePromptTemplate,PromptTemplate # type: ignore
 import pandas as pd
 import os
 import configure
 from operator import itemgetter
-from langchain.chains.openai_tools import create_extraction_chain_pydantic 
-from langchain_core.pydantic_v1 import BaseModel, Field
-from langchain_openai import ChatOpenAI 
 #from  langchain_openai.chat_models import with_structured_output
 import json
-from langchain.embeddings import OpenAIEmbeddings
-from langchain.vectorstores import Chroma
-from langchain.prompts.example_selector import SemanticSimilarityExampleSelector
+# from langchain.vectorstores import Chroma
+# from langchain.prompts.example_selector import SemanticSimilarityExampleSelector
 from openai import AzureOpenAI
-from langchain_openai import AzureChatOpenAI
-from langchain.embeddings import AzureOpenAIEmbeddings 
+# from langchain_openai import AzureChatOpenAI
+# from langchain.embeddings import AzureOpenAIEmbeddings 
 
 
 AZURE_OPENAI_API_KEY = os.environ.get('AZURE_OPENAI_API_KEY')
@@ -34,13 +30,13 @@ azure_openai_client = AzureOpenAI(
 )
 
 # OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY')
-llm = AzureChatOpenAI(
-    openai_api_version=AZURE_OPENAI_API_VERSION,
-    azure_deployment=AZURE_DEPLOYMENT_NAME,
-    azure_endpoint=AZURE_OPENAI_ENDPOINT,
-    api_key=AZURE_OPENAI_API_KEY,
-    temperature=0
-)
+# llm = AzureChatOpenAI(
+#     openai_api_version=AZURE_OPENAI_API_VERSION,
+#     azure_deployment=AZURE_DEPLOYMENT_NAME,
+#     azure_endpoint=AZURE_OPENAI_ENDPOINT,
+#     api_key=AZURE_OPENAI_API_KEY,
+#     temperature=0
+# )
 from typing import List
 load_dotenv()
 import csv 
@@ -53,12 +49,12 @@ from io import StringIO
 # LANGCHAIN_ENDPOINT=os.getenv("LANGCHAIN_ENDPOINT")
 
 
-from langchain_community.utilities.sql_database import SQLDatabase
+# from langchain_community.utilities.sql_database import SQLDatabase
 #from langchain.agents import create_sql_agent
 #from langchain_community.agent_toolkits.sql.toolkit import SQLDatabaseToolkit
-from langchain.chains import create_sql_query_chain
-from langchain_openai import ChatOpenAI
-from langchain_community.tools.sql_database.tool import QuerySQLDataBaseTool
+# from langchain.chains import create_sql_query_chain
+# from langchain_openai import ChatOpenAI
+# from langchain_community.tools.sql_database.tool import QuerySQLDataBaseTool
 from langchain.memory import ChatMessageHistory
 from operator import itemgetter
 from google.oauth2 import service_account
@@ -75,7 +71,7 @@ from langchain_openai import ChatOpenAI
 
 
 
-from table_details import get_table_details , get_tables , itemgetter , create_extraction_chain_pydantic, Table 
+# from table_details import get_table_details , get_tables , itemgetter ,  Table 
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
 
@@ -88,7 +84,7 @@ import configure
 # db_database=os.getenv("db_database")
 # db_port=os.getenv("db_port")
 # db_schema= os.getenv("db_schema")
-mahindra_tables =  json.loads(os.getenv("mahindra_tables"))
+db_tables =  json.loads(os.getenv("db_tables"))
 
 
 SQL_DB_SERVER = os.getenv("SQL_DB_SERVER")
@@ -102,7 +98,7 @@ SQL_MAX_OVERFLOW = int(os.getenv("SQL_MAX_OVERFLOW", 10))
 
 SQL_DATABASE_URL = (
     f"mssql+pyodbc://{SQL_DB_USER}:{SQL_DB_PASSWORD}@{SQL_DB_SERVER}:{SQL_DB_PORT}/{SQL_DB_NAME}"
-    f"?driver={SQL_DB_DRIVER}"
+    f"?driver={SQL_DB_DRIVER}&Connection+Timeout=120"
 )
 
 
@@ -183,14 +179,14 @@ from sqlalchemy.exc import SQLAlchemyError
 #         raise e  # Propagate the exception
 #     finally:
 #         session.close()
-# def get_postgres_db(selected_subject, mahindra_tables):
-#     print("SELECTED SUB",selected_subject,mahindra_tables)
+# def get_postgres_db(selected_subject, db_tables):
+#     print("SELECTED SUB",selected_subject,db_tables)
 #     try:
 #         print(db_schema)
 #         db = SQLDatabase.from_uri(
 #             f'postgresql+psycopg2://{quote_plus(db_user)}:{quote_plus(db_password)}@{db_host}:{db_port}/{db_database}',
 #             schema=db_schema,
-#             include_tables=mahindra_tables,
+#             include_tables=db_tables,
 #             view_support=True,
 #             sample_rows_in_table_info=1,
 #             lazy_table_reflection=True
@@ -205,79 +201,79 @@ def create_bigquery_uri(project_id, dataset_id):
     return f"{project_id}.{dataset_id}"
 
 
-class BigQuerySQLDatabase(SQLDatabase):
-    def _init_(self):
-        try:
-            # Create credentials dictionary from environment variables
-            credentials_info = {
-                "type": os.getenv('GOOGLE_CREDENTIALS_TYPE'),
-                "project_id": os.getenv('GOOGLE_CREDENTIALS_PROJECT_ID'),
-                "private_key_id": os.getenv('GOOGLE_CREDENTIALS_PRIVATE_KEY_ID'),
-                "private_key":"-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQDln+0curmestQu\nEjLJWLY5YkCdmhlEZfWvCapN41hO6mS6nwVeYQw4ICP8ltbdsAZrsmzVgtf3GC+G\ngL99wG5WeEd/F1XPTemg8mKbMAf67nGWMc3z5yV3U4sGEnDglCVh1gHhDQC/px2K\nWopLVC/F46zQ+ERj8RjFCXExuZrzCExuFvRrT6dalDOqH8XFLeonnLoqJkPVgjvW\nfuuihW5pMiOfGyXksabfOc1GAzt4Ixbp0rsUL10ZqTPz+FOQ4WeJcs1slgRSQxHC\nmnTKx5kAT8MHEChGzhX9/BHDDzjTZL5isEybWjbKuUEcqCpc1FajFMT8NSDayifz\nEtHnxHhjAgMBAAECggEAAJYeec2r1d5/1Ttx3F3qf59TUJ/9qjwZu0SQQf2DOSvy\nuLHbYYGcUupehJ3LIBmiTIxyvEKrwibe3eJdLo5jQqZccY3OZbnN93T+8lHAMs4F\njkpRKj/WB0dF1uImLDXaTAPfM1lezVsgO71ESZ6L53fKBYrSXGLP/bVOfbcJTuwn\nFjAgNdpj2xYl+G9B+qkuNBHZ7uVnQ3w2l4zvRAWIIwtRj1qjCe7ynac9xizkrEMI\nae1WCKCZQbJGOvOl4Mu00cVvfspwzHfQZwkn+dVjN2+HNQTbzsM14CzDTmXGjD6e\n5/s3OYj7Tt4lV/PIVsf/y/zz3mtVV5D73yWQiZbiNQKBgQD9HfRuKnrKFrnyTy31\nRkSqZTfZh2smRqiR4RZssgZUCKD5GZtQ3/opWkh2HSBdQY8tLkxiu7wJ9WKmHMVV\nnUANqcBxXwsaLdMVEt4C7Y3aav8owIn+rLxD0BuQkjbX+7cx0UTnNhmg97HpYJr5\nNV+xF2LyviTemPpviWI2W6N9FwKBgQDoPXjR+L8ow0Sxhu5IjLWWp86X4KXQOCuY\n/Qbk+L3ibM8DRpgZ+nwH9zDWcGIS3Kk5t8pIQSYbthYBugkekUvtCt2dRyxIPLK9\nXnaCJFSbtpd1aaII/YF6Gp0yaap0B3+x9L4w1UrvLHK3xUcVdeb3DDCj0IVAqBg9\nqtLoktbmlQKBgQC1cTqdmh/pK79hnjbAov1n9CTD71n01yPRZrvPcRIuPP0/c4at\nw9CswgY9fQWNNAixh4XEJPVXYiq0Dt26UH3xDWVhH5Ny0bSFX7/781QDZT3Bdbu1\n7xcJuW15BgcAbnVU5cFxyIs4ozZKqDCPQh51cOFCRuFhG+IyABaCBtC8QwKBgHvw\nam0sIeBALYXMa5geN76Z+WAGTJdNkr7Hsgk6UiPnS6cE4qFikxSxL8gRG9XTGyCp\nW/OpiQva5e2v+bPteKadWN3ZoOFAO2diZT5Y4ypijHvljsrbd2DRmTjROV1IrzYq\nVeG7wozXnLVEPAZQ8JzBTafu3V4/Fwi6BGqICtXtAoGAb1QEQxRfq87q2q7DxIbm\nlxooi07TB1eevVw6r2qNRQQ5DHF+vb65Tw9ZV3E0g8/fJRD2gFC+yxgfI3iUVyyh\nIBBjKgCJOgp6zOS1L+RTNQswXxxLw+5B9j/oArHZ24j7YtKPLr+bcTNypzXn8dh8\n1U/HqFUTo1bsy8Pu35MXyco=\n-----END PRIVATE KEY-----",
-                "client_email": os.getenv('GOOGLE_CREDENTIALS_CLIENT_EMAIL'),
-                "client_id": os.getenv('GOOGLE_CREDENTIALS_CLIENT_ID'),
-                "auth_uri": "https://accounts.google.com/o/oauth2/auth",
-                "token_uri": "https://oauth2.googleapis.com/token",
-                "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
-                "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/bqserviceacc%40prateekproject-450509.iam.gserviceaccount.com",
-                "universe_domain": "googleapis.com"
-            }
+# class BigQuerySQLDatabase(SQLDatabase):
+#     def _init_(self):
+#         try:
+#             # Create credentials dictionary from environment variables
+#             credentials_info = {
+#                 "type": os.getenv('GOOGLE_CREDENTIALS_TYPE'),
+#                 "project_id": os.getenv('GOOGLE_CREDENTIALS_PROJECT_ID'),
+#                 "private_key_id": os.getenv('GOOGLE_CREDENTIALS_PRIVATE_KEY_ID'),
+#                 "private_key":"-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQDln+0curmestQu\nEjLJWLY5YkCdmhlEZfWvCapN41hO6mS6nwVeYQw4ICP8ltbdsAZrsmzVgtf3GC+G\ngL99wG5WeEd/F1XPTemg8mKbMAf67nGWMc3z5yV3U4sGEnDglCVh1gHhDQC/px2K\nWopLVC/F46zQ+ERj8RjFCXExuZrzCExuFvRrT6dalDOqH8XFLeonnLoqJkPVgjvW\nfuuihW5pMiOfGyXksabfOc1GAzt4Ixbp0rsUL10ZqTPz+FOQ4WeJcs1slgRSQxHC\nmnTKx5kAT8MHEChGzhX9/BHDDzjTZL5isEybWjbKuUEcqCpc1FajFMT8NSDayifz\nEtHnxHhjAgMBAAECggEAAJYeec2r1d5/1Ttx3F3qf59TUJ/9qjwZu0SQQf2DOSvy\nuLHbYYGcUupehJ3LIBmiTIxyvEKrwibe3eJdLo5jQqZccY3OZbnN93T+8lHAMs4F\njkpRKj/WB0dF1uImLDXaTAPfM1lezVsgO71ESZ6L53fKBYrSXGLP/bVOfbcJTuwn\nFjAgNdpj2xYl+G9B+qkuNBHZ7uVnQ3w2l4zvRAWIIwtRj1qjCe7ynac9xizkrEMI\nae1WCKCZQbJGOvOl4Mu00cVvfspwzHfQZwkn+dVjN2+HNQTbzsM14CzDTmXGjD6e\n5/s3OYj7Tt4lV/PIVsf/y/zz3mtVV5D73yWQiZbiNQKBgQD9HfRuKnrKFrnyTy31\nRkSqZTfZh2smRqiR4RZssgZUCKD5GZtQ3/opWkh2HSBdQY8tLkxiu7wJ9WKmHMVV\nnUANqcBxXwsaLdMVEt4C7Y3aav8owIn+rLxD0BuQkjbX+7cx0UTnNhmg97HpYJr5\nNV+xF2LyviTemPpviWI2W6N9FwKBgQDoPXjR+L8ow0Sxhu5IjLWWp86X4KXQOCuY\n/Qbk+L3ibM8DRpgZ+nwH9zDWcGIS3Kk5t8pIQSYbthYBugkekUvtCt2dRyxIPLK9\nXnaCJFSbtpd1aaII/YF6Gp0yaap0B3+x9L4w1UrvLHK3xUcVdeb3DDCj0IVAqBg9\nqtLoktbmlQKBgQC1cTqdmh/pK79hnjbAov1n9CTD71n01yPRZrvPcRIuPP0/c4at\nw9CswgY9fQWNNAixh4XEJPVXYiq0Dt26UH3xDWVhH5Ny0bSFX7/781QDZT3Bdbu1\n7xcJuW15BgcAbnVU5cFxyIs4ozZKqDCPQh51cOFCRuFhG+IyABaCBtC8QwKBgHvw\nam0sIeBALYXMa5geN76Z+WAGTJdNkr7Hsgk6UiPnS6cE4qFikxSxL8gRG9XTGyCp\nW/OpiQva5e2v+bPteKadWN3ZoOFAO2diZT5Y4ypijHvljsrbd2DRmTjROV1IrzYq\nVeG7wozXnLVEPAZQ8JzBTafu3V4/Fwi6BGqICtXtAoGAb1QEQxRfq87q2q7DxIbm\nlxooi07TB1eevVw6r2qNRQQ5DHF+vb65Tw9ZV3E0g8/fJRD2gFC+yxgfI3iUVyyh\nIBBjKgCJOgp6zOS1L+RTNQswXxxLw+5B9j/oArHZ24j7YtKPLr+bcTNypzXn8dh8\n1U/HqFUTo1bsy8Pu35MXyco=\n-----END PRIVATE KEY-----",
+#                 "client_email": os.getenv('GOOGLE_CREDENTIALS_CLIENT_EMAIL'),
+#                 "client_id": os.getenv('GOOGLE_CREDENTIALS_CLIENT_ID'),
+#                 "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+#                 "token_uri": "https://oauth2.googleapis.com/token",
+#                 "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+#                 "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/bqserviceacc%40prateekproject-450509.iam.gserviceaccount.com",
+#                 "universe_domain": "googleapis.com"
+#             }
 
-            # Load credentials from dictionary
-            credentials = service_account.Credentials.from_service_account_info(
-                credentials_info,
-                scopes=["https://www.googleapis.com/auth/bigquery"]
-            )
+#             # Load credentials from dictionary
+#             credentials = service_account.Credentials.from_service_account_info(
+#                 credentials_info,
+#                 scopes=["https://www.googleapis.com/auth/bigquery"]
+#             )
 
-            self.project_id = credentials_info["project_id"]
-            self.client = bigquery.Client(credentials=credentials, project=self.project_id)
+#             self.project_id = credentials_info["project_id"]
+#             self.client = bigquery.Client(credentials=credentials, project=self.project_id)
 
-        except Exception as e:
-            raise ValueError(f"Error loading credentials: {e}")
-    def run(self, command: str):
-        """Executes a SQL query and returns results as JSON."""
-        try:
-            query_job = self.client.query(command)
-            results = query_job.result()
-            return [dict(row.items()) for row in results]
-        except Exception as e:
-            return f"Error executing SQL command: {e}"
+#         except Exception as e:
+#             raise ValueError(f"Error loading credentials: {e}")
+#     def run(self, command: str):
+#         """Executes a SQL query and returns results as JSON."""
+#         try:
+#             query_job = self.client.query(command)
+#             results = query_job.result()
+#             return [dict(row.items()) for row in results]
+#         except Exception as e:
+#             return f"Error executing SQL command: {e}"
 
-    def get_table_names(self):
-        """Returns all available tables in the project."""
-        tables_list = []
-        datasets = list(self.client.list_datasets())
-        for dataset in datasets:
-            dataset_id = dataset.dataset_id
-            tables = self.client.list_tables(dataset_id)
-            for table in tables:
-                tables_list.append(f"{dataset_id}.{table.table_id}")
-        return tables_list
+#     def get_table_names(self):
+#         """Returns all available tables in the project."""
+#         tables_list = []
+#         datasets = list(self.client.list_datasets())
+#         for dataset in datasets:
+#             dataset_id = dataset.dataset_id
+#             tables = self.client.list_tables(dataset_id)
+#             for table in tables:
+#                 tables_list.append(f"{dataset_id}.{table.table_id}")
+#         return tables_list
 
-    def get_table_info(self, table_names=None):
-        """Returns schema information for given tables."""
-        if table_names is None:
-            table_names = self.get_table_names()
+#     def get_table_info(self, table_names=None):
+#         """Returns schema information for given tables."""
+#         if table_names is None:
+#             table_names = self.get_table_names()
 
-        schema_info = ""
-        for table_name in table_names:
-            try:
-                dataset_id, table_id = table_name.split(".")
-                table_ref = self.client.dataset(dataset_id).table(table_id)
-                table = self.client.get_table(table_ref)
+#         schema_info = ""
+#         for table_name in table_names:
+#             try:
+#                 dataset_id, table_id = table_name.split(".")
+#                 table_ref = self.client.dataset(dataset_id).table(table_id)
+#                 table = self.client.get_table(table_ref)
 
-                schema_info += f"\nTable: {table_name}\nColumns:\n"
-                for column in table.schema:
-                    schema_info += f"  {column.name} ({column.field_type}) {'NULLABLE' if column.is_nullable else 'NOT NULLABLE'}\n"
-            except Exception as e:
-                schema_info += f"Error getting schema for table {table_name}: {e}\n"
+#                 schema_info += f"\nTable: {table_name}\nColumns:\n"
+#                 for column in table.schema:
+#                     schema_info += f"  {column.name} ({column.field_type}) {'NULLABLE' if column.is_nullable else 'NOT NULLABLE'}\n"
+#             except Exception as e:
+#                 schema_info += f"Error getting schema for table {table_name}: {e}\n"
 
-        return schema_info
+#         return schema_info
 
 
 
 # Connection for new AZURE SQL 
-def get_sql_db(selected_subject, mahindra_tables):
+def get_sql_db():
     print("connected to newer azure SQL DB.")
     try:
         engine = create_engine(
@@ -290,8 +286,8 @@ def get_sql_db(selected_subject, mahindra_tables):
         print("Connection successful")
 
         # Wrap the engine in a LangChain SQLDatabase object
-        db = SQLDatabase(engine)
-        return db
+        # db = SQLDatabase(engine)
+        return engine
 
     except SQLAlchemyError as e:
         print(f"Error connecting to the database: {e}")
@@ -300,7 +296,7 @@ def get_sql_db(selected_subject, mahindra_tables):
 
 
 
-def get_chain(question, _messages, selected_model, selected_subject, selected_database, table_details, selected_business_rule,question_type,relationships):
+def get_chain(question, selected_database, table_details, selected_business_rule,question_type,relationships, examples):
     if selected_database == 'GCP':
         prompt_file = "GCP_prompt.txt"
     elif selected_database == 'PostgreSQL-Azure':
@@ -310,13 +306,13 @@ def get_chain(question, _messages, selected_model, selected_subject, selected_da
         prompt_file = "Generic_azure_prompt.txt" if question_type == "generic" else "Azure_prompt.txt"
     
     
-    llm = AzureChatOpenAI(
-    openai_api_version=AZURE_OPENAI_API_VERSION,
-    azure_deployment=AZURE_DEPLOYMENT_NAME,
-    azure_endpoint=AZURE_OPENAI_ENDPOINT,
-    api_key=AZURE_OPENAI_API_KEY,
-    temperature=0
-)
+#     llm = AzureChatOpenAI(
+#     openai_api_version=AZURE_OPENAI_API_VERSION,
+#     azure_deployment=AZURE_DEPLOYMENT_NAME,
+#     azure_endpoint=AZURE_OPENAI_ENDPOINT,
+#     api_key=AZURE_OPENAI_API_KEY,
+#     temperature=0
+# )
     def load_prompt():
         with open(prompt_file, "r", encoding="utf-8") as file:
             return file.read()
@@ -324,18 +320,18 @@ def get_chain(question, _messages, selected_model, selected_subject, selected_da
     FINAL_PROMPT = load_prompt()
     # Get the static part of the prompt
     static_prompt = FINAL_PROMPT
-    example_prompt = ChatPromptTemplate.from_messages(
-        [
-            # ("human", "{input}\nSQLQuery:"),
-            ("human", "{input}"),
-            ("ai", "{query}"),
-        ]
-    )
-    few_shot_prompt = FewShotChatMessagePromptTemplate(
-        example_prompt=example_prompt,
-        example_selector=get_example_selector("sql_query_examples.json"),
-        input_variables=["input","top_k","table_info"],
-    )
+    # example_prompt = ChatPromptTemplate.from_messages(
+    #     [
+    #         # ("human", "{input}\nSQLQuery:"),
+    #         ("human", "{input}"),
+    #         ("ai", "{query}"),
+    #     ]
+    # )
+    # few_shot_prompt = FewShotChatMessagePromptTemplate(
+    #     example_prompt=example_prompt,
+    #     example_selector=get_example_selector("sql_query_examples.json"),
+    #     input_variables=["input","top_k","table_info"],
+    # )
     
     business_glossary = get_business_glossary_text()
     formatted_relationships = []
@@ -349,130 +345,151 @@ def get_chain(question, _messages, selected_model, selected_subject, selected_da
     
     # print("Few shot prompt : " , few_shot_prompt.invoke({{"input": "List all parts used in a particular repair order RO22A002529",
     # "top_k": "2", "table_info":""}}))
-    
-    if question_type == "generic":
-        
+    def examples_to_str(examples):
+            lines = []
+            for i, ex in enumerate(examples, 1):
+                lines.append(f"Example {i}:")
+                lines.append(f"  input: {ex['input']}")
+                lines.append(f"  query: {ex['query']['query']}")  # Access nested query
+                lines.append("")  # blank line between examples
+            return "\n".join(lines)
+    examples_str = examples_to_str(examples)
 
-        final_prompt1 = ChatPromptTemplate.from_messages(
-            [
-                ("system", static_prompt.format(table_info=table_details,  Business_Glossary = business_glossary,relationships=relationships_str)),
-                few_shot_prompt,
-                MessagesPlaceholder(variable_name="messages"),
-                ("human", "{input}"),
-            ]
-        )
+    if question_type == "generic":
+
+        final_prompt1 = static_prompt.format(table_info=table_details,  Business_Glossary = business_glossary,relationships=relationships_str, examples = examples_str)
     elif question_type =="usecase":
-        final_prompt1 = ChatPromptTemplate.from_messages(
-            [
-                ("system", static_prompt.format(table_info=table_details, Business_Rule = selected_business_rule, Business_Glossary = business_glossary, relationships=relationships_str)),
-                few_shot_prompt,
-                MessagesPlaceholder(variable_name="messages"),
-                ("human", "{input}"),
-            ]
-        )
+        final_prompt1 = static_prompt.format(table_info=table_details, Business_Rule = selected_business_rule, Business_Glossary = business_glossary, relationships=relationships_str, examples = examples_str)
     final_prompt = final_prompt1
-    print("langchain prompt: ", final_prompt)
-    if selected_database=="GCP":
-            db = BigQuerySQLDatabase()
-    elif selected_database=="PostgreSQL-Azure":
-        db = get_postgres_db(selected_subject, mahindra_tables)
-    elif selected_database=="Azure SQL":
-        db = get_sql_db(selected_subject, mahindra_tables)
-    print("start",selected_database)
+    print("prompt here: ", final_prompt)
+    # if selected_database=="GCP":
+    #         db = BigQuerySQLDatabase()
+    # elif selected_database=="PostgreSQL-Azure":
+    #     db = get_postgres_db(selected_subject, db_tables)
     print("Generate Query Starting")
 
+    try:
+   
+        response = azure_openai_client.chat.completions.create(
+            model=AZURE_DEPLOYMENT_NAME,
+            messages=[
+            {"role": "system", "content": final_prompt},
+            {"role": "user", "content": question}
+        ],
+        temperature=0,  # Lower temperature for more predictable, structured output
+        response_format={"type": "json_object"}  # This is the key parameter!
+        )
+        print(f"new llm response {response}")
+    # The response content will be a JSON string
+        response_content = response.choices[0].message.content
+        
+        # Parse the guaranteed JSON string into a Python dictionary
+        json_output = json.loads(response_content)
+
+        # Now you can safely access the keys
+        print("--- LLM Output (Parsed) ---")
+        print(f"Description: {json_output.get('description')}")
+
+        SQL_Statement = json_output.get('query')
+        print(f"Query: {json_output.get('query')}")
+        print(f"Error: {json_output.get('error')}")
+
+    except Exception as e:
+        print(f"An error occurred: {e}")
+
     #     final_prompt=final_prompt2    
-    generate_query = create_sql_query_chain(llm, db, final_prompt)
-    SQL_Statement = generate_query.invoke({"question": question, "messages": _messages})
+    # generate_query = create_sql_query_chain(llm, db, final_prompt)
+    # SQL_Statement = generate_query.invoke({"question": question, "messages": _messages})
+
+    # # Override QuerySQLDataBaseTool validation
+    # class CustomQuerySQLDatabaseTool(QuerySQLDataBaseTool):
+    #     def _init_(self, db):
+    #         if not isinstance(db, SQLDatabase):
+    #             raise ValueError("db must be an instance of SQLDatabase")
+    #         super()._init_(db=db)
+
+    # execute_query = CustomQuerySQLDatabaseTool(db=db)
+    
+    # chain = (
+    #     RunnablePassthrough.assign(table_names_to_use=lambda _: ["MH_RO_HDR_DETAILS", "MH_RO_PARTS", "MH_CUST_VERBATIM", "MH_MODEL_MASTER", "MH_AD_AI_DIMENSION", "MH_RO_LABOUR"]) |
+    #     RunnablePassthrough.assign(query=generate_query).assign(
+    #         result=itemgetter("query")
+    #     )
+    # )
+    
+        
+    
+    # return chain,  SQL_Statement, db,final_prompt1
     print(f"Generated SQL Statement before execution: {SQL_Statement}")
 
-    # Override QuerySQLDataBaseTool validation
-    class CustomQuerySQLDatabaseTool(QuerySQLDataBaseTool):
-        def _init_(self, db):
-            if not isinstance(db, SQLDatabase):
-                raise ValueError("db must be an instance of SQLDatabase")
-            super()._init_(db=db)
+    return json_output, final_prompt1
 
-    execute_query = CustomQuerySQLDatabaseTool(db=db)
-    
-    chain = (
-        RunnablePassthrough.assign(table_names_to_use=lambda _: db.get_table_names()) |  # Get table names
-        RunnablePassthrough.assign(query=generate_query).assign(
-            result=itemgetter("query")
-        )
-    )
-    
-        
-    
-    return chain,  SQL_Statement, db,final_prompt1
-
-
-
-def invoke_chain(question, messages, selected_model, selected_subject, selected_database, table_info,selected_business_rule,question_type,relationships):
+def invoke_chain(question, messages, selected_model, selected_subject, selected_database, table_info, selected_business_rule, question_type, relationships, examples):
     print(question, messages, selected_model, selected_subject, selected_database)
+    response = None
+    SQL_Statement = None
+    final_prompt = None
     try:
         print('Model used:', selected_model)
-        history = create_history(messages)
-        chain, SQL_Statement, db, final_prompt = get_chain(
-            question, history.messages, selected_model, selected_subject,
-            selected_database, table_info, selected_business_rule, question_type, relationships
-        )
-        print(f"Generated SQL Statement in newlangchain_utils: {SQL_Statement}")
-        SQL_Statement = SQL_Statement.replace("SQL Query:", "").strip()
+        # history = create_history(messages)
+        json_output, final_prompt = get_chain(
+            question, 
+            selected_database, table_info, selected_business_rule, question_type, relationships, examples
+        )  ##we get query output from get chain
+        SQL_Statement = json_output["query"]
 
-        response = chain.invoke({
-            "question": question,           # <-- Correct key
-            "top_k": 1,  #changed from 3 to 1
-            "messages": history.messages,
-            "table_details": table_info  # <-- Required by your prompt
-        })
+        # SQL_Statement = SQL_Statement.replace("SQL Query:", "").strip()
+
+        # response = chain.invoke({
+        #     "question": question,
+        #     "top_k": 1,
+        #     "messages": history.messages,
+        #     "table_details": table_info
+        # })
         print("Question:", question)
-        print("Response:", response)
-        
+        print("Response:", json_output)
 
         tables_data = {}
-        for table in mahindra_tables:
-            query = response["query"]
-            print(f"Executing SQL Query: {query}")
-            if selected_database=="GCP":
-                result_json = db.run(query)
-                df = pd.DataFrame(result_json)  # Convert result to DataFrame
-                tables_data[table] = df
-                break
-            elif selected_database=="PostgreSQL-Azure":
-                alchemyEngine = create_engine(f'postgresql+psycopg2://{quote_plus(db_user)}:{quote_plus(db_password)}@{db_host}:{db_port}/{db_database}')
-                with alchemyEngine.connect() as conn:
-                    df = pd.read_sql(
-                        sql=query,
-                        con=conn.connection
-                    )
-                # tables_data[table] = pd.DataFrame()
-                tables_data[table] = df
-                print(table)
-                break
-            elif selected_database == "Azure SQL":
-                print("now running via azure sql")
-                result = db._engine.execute(query)  # SQLAlchemy ResultProxy
-                print("result is: ", result)
-                rows = result.fetchall()  # list of row tuples
-                columns = result.keys()   # dynamic column names
-                df = pd.DataFrame(rows, columns=columns)
-                tables_data[table] = df
-                break
-        return response, mahindra_tables, tables_data, db, final_prompt
+        query = SQL_Statement
+        print(f"Executing SQL Query: {query}")
+        # if selected_database == "GCP":
+        #     result_json = db.run(query)
+        #     df = pd.DataFrame(result_json)
+        #     tables_data[table] = df
+        #     break
+        # elif selected_database == "PostgreSQL-Azure":
+        #     alchemyEngine = create_engine(f'postgresql+psycopg2://{quote_plus(db_user)}:{quote_plus(db_password)}@{db_host}:{db_port}/{db_database}')
+        #     with alchemyEngine.connect() as conn:
+        #         df = pd.read_sql(sql=query, con=conn.connection)
+        #     tables_data[table] = df
+        #     print(table)
+        #     break 
+        if selected_database == "Azure SQL":
+            db = get_sql_db()
+            result = db.execute(query)
+            print("result is: ", result)
+            rows = result.fetchall()
+            columns = result.keys()
+            df = pd.DataFrame(rows, columns=columns)
+            tables_data["Table data"] = df
+        # Include SQL_Statement in the return tuple
+        return json_output, db_tables, tables_data, final_prompt
 
     except Exception as e:
         print("Error:", e)
-        return "Error in invoke chain function", [], {}, e,None
+        # Return whatever response was generated, or None if none was generated
+        # Also return SQL_Statement and final_prompt if available
+        return response, [], {}, final_prompt
 
-def create_history(messages):
-    history = ChatMessageHistory()
-    for message in messages:
-        if message["role"] == "user":
-            history.add_user_message(message["content"])
-        else:
-            history.add_ai_message(message["content"])
-    return history
+
+# def create_history(messages):
+#     history = ChatMessageHistory()
+#     for message in messages:
+#         if message["role"] == "user":
+#             history.add_user_message(message["content"])
+#         else:
+#             history.add_ai_message(message["content"])
+#     return history
 
 def escape_single_quotes(input_string):
     return input_string.replace("'", "''")
@@ -490,7 +507,6 @@ def get_business_glossary_text():
     
     # Join all lines with newline characters
     glossary_text = '\n'.join(glossary_lines)
-    print(glossary_text)
     return glossary_text
 
 def get_key_parameters():
@@ -549,46 +565,46 @@ def get_business_rule(intent, file_path='business_rules.txt'):
 
     return rule if rule else f"No business rule defined for intent: {intent}"
 
-def get_example_selector(json_file_path: str):
-    """
-    Returns a SemanticSimilarityExampleSelector initialized with examples from a JSON file.
+# def get_example_selector(json_file_path: str):
+#     """
+#     Returns a SemanticSimilarityExampleSelector initialized with examples from a JSON file.
     
-    Args:
-        json_file_path (str): Path to the JSON file containing examples
+#     Args:
+#         json_file_path (str): Path to the JSON file containing examples
         
-    Returns:
-        SemanticSimilarityExampleSelector: Selector configured with examples
-    """
-    # Load examples from JSON file
-    with open(json_file_path, 'r', encoding='utf-8') as file:
-        examples = json.load(file)
+#     Returns:
+#         SemanticSimilarityExampleSelector: Selector configured with examples
+#     """
+#     # Load examples from JSON file
+#     with open(json_file_path, 'r', encoding='utf-8') as file:
+#         examples = json.load(file)
     
-    # Validate examples structure
-    if not isinstance(examples, list):
-        raise ValueError("JSON file should contain a list of examples")
-    if len(examples) == 0:
-        raise ValueError("No examples found in JSON file")
-    if not all(isinstance(example, dict) and 'input' in example and 'query' in example for example in examples):
-        raise ValueError("Each example should be a dictionary with 'input' and 'query' keys")
+#     # Validate examples structure
+#     if not isinstance(examples, list):
+#         raise ValueError("JSON file should contain a list of examples")
+#     if len(examples) == 0:
+#         raise ValueError("No examples found in JSON file")
+#     if not all(isinstance(example, dict) and 'input' in example and 'query' in example for example in examples):
+#         raise ValueError("Each example should be a dictionary with 'input' and 'query' keys")
     
-    # Create Azure OpenAI embeddings instance
-    azure_embeddings = AzureOpenAIEmbeddings(
-        azure_deployment= AZURE_EMBEDDING_DEPLOYMENT_NAME,  # Your embedding model deployment name
-        openai_api_version=AZURE_OPENAI_API_VERSION,
-        azure_endpoint=AZURE_OPENAI_ENDPOINT,
-        api_key=AZURE_OPENAI_API_KEY,
-    )
+#     # Create Azure OpenAI embeddings instance
+#     azure_embeddings = AzureOpenAIEmbeddings(
+#         azure_deployment= AZURE_EMBEDDING_DEPLOYMENT_NAME,  # Your embedding model deployment name
+#         openai_api_version=AZURE_OPENAI_API_VERSION,
+#         azure_endpoint=AZURE_OPENAI_ENDPOINT,
+#         api_key=AZURE_OPENAI_API_KEY,
+#     )
     
-    # Create example selector with Azure embeddings
-    example_selector = SemanticSimilarityExampleSelector.from_examples(
-        examples,
-        azure_embeddings,  # Use Azure embeddings instead of OpenAIEmbeddings
-        Chroma,
-        k=3,
-        input_keys=["input"],
-    )
+#     # Create example selector with Azure embeddings
+#     example_selector = SemanticSimilarityExampleSelector.from_examples(
+#         examples,
+#         azure_embeddings,  # Use Azure embeddings instead of OpenAIEmbeddings
+#         Chroma,
+#         k=3,
+#         input_keys=["input"],
+#     )
     
-    return example_selector
+#     return example_selector
 
 def find_relationships_for_tables(table_names, json_file_path):
     # Load the JSON

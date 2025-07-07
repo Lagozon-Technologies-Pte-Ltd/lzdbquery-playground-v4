@@ -1,6 +1,7 @@
 
 const loadingDiv = document.getElementById('loading');
 let tableName;
+let clientTableData = {};
 let isRecording = false;
 let mediaRecorder;
 let audioChunks = [];
@@ -15,49 +16,37 @@ window.onload = function () {
     let originalButtonHTML = "";
     console.log("Variables reset on page reload");
 };
-async function loadTableColumns(table_name) {
-    console.log("Loading columns for table:", table_name); // Debug statement
-    const selectedTable = table_name;
+function loadTableColumns(columnNames) {
+    console.log("Loading columns for table:");
 
-    if (!selectedTable) {
-        alert("Please select a table.");
-        return;
-    }
+    // if (!columnNames || columnNames.length === 0) {
+    //     alert("No columns available for this table.");
+    //     return;
+    // }
 
-    try {
-        const response = await fetch(`/get-table-columns/?table_name=${selectedTable}`);
-        const data = await response.json();
+    const xAxisDropdown = document.getElementById("x-axis-dropdown");
+    const yAxisDropdown = document.getElementById("y-axis-dropdown");
 
-        if (response.ok && data.columns) {
-            const xAxisDropdown = document.getElementById("x-axis-dropdown");
-            const yAxisDropdown = document.getElementById("y-axis-dropdown");
+    // Reset dropdown options
+    xAxisDropdown.innerHTML = '<option value="" disabled selected>Select X-Axis</option>';
+    yAxisDropdown.innerHTML = '<option value="" disabled selected>Select Y-Axis</option>';
 
-            // Reset dropdown options
-            xAxisDropdown.innerHTML = '<option value="" disabled selected>Select X-Axis</option>';
-            yAxisDropdown.innerHTML = '<option value="" disabled selected>Select Y-Axis</option>';
+    // Populate options
+    columnNames.forEach((column) => {
+        const xOption = document.createElement("option");
+        const yOption = document.createElement("option");
 
-            // Populate options
-            data.columns.forEach((column) => {
-                const xOption = document.createElement("option");
-                const yOption = document.createElement("option");
+        xOption.value = column;
+        xOption.textContent = column;
 
-                xOption.value = column;
-                xOption.textContent = column;
+        yOption.value = column;
+        yOption.textContent = column;
 
-                yOption.value = column;
-                yOption.textContent = column;
-
-                xAxisDropdown.appendChild(xOption);
-                yAxisDropdown.appendChild(yOption);
-            });
-        } else {
-            alert("Failed to load columns.");
-        }
-    } catch (error) {
-        console.error("Error loading table columns:", error);
-        alert("An error occurred while fetching columns.");
-    }
+        xAxisDropdown.appendChild(xOption);
+        yAxisDropdown.appendChild(yOption);
+    });
 }
+
 // Add event listener for "Enter" key press in the input field
 document.getElementById("chat_user_query").addEventListener("keyup", function (event) {
     // Number 13 is the "Enter" key on the keyboard
@@ -77,8 +66,8 @@ async function generateChart() {
     const xAxis = xAxisDropdown.value;
     const yAxis = yAxisDropdown.value;
     const chartType = chartTypeDropdown.value;
-    selectedTable = tableName;
-    if (!selectedTable || !xAxis || !yAxis || !chartType) {
+
+    if (!xAxis || !yAxis || !chartType) {
         alert("Please select all required fields.");
         return;
     }
@@ -90,10 +79,11 @@ async function generateChart() {
                 "Content-Type": "application/json",
             },
             body: JSON.stringify({
-                table_name: selectedTable,
                 x_axis: xAxis,
                 y_axis: yAxis,
                 chart_type: chartType,
+                // flatten if tableData is { "Table data": [...] }
+                table_data: table_data["Table data"] || table_data
             }),
         });
 
@@ -113,23 +103,6 @@ async function generateChart() {
         console.error("Error generating chart:", error);
         alert("An error occurred while generating the chart.");
     }
-}
-function changePage(tableName, pageNumber, recordsPerPage) {
-    if (pageNumber < 1) return;
-
-    // Corrected: Using template literals to construct the URL
-    fetch(`/get_table_data?table_name=${tableName}&page_number=${pageNumber}&records_per_page=${recordsPerPage}`)
-        .then(response => response.json())
-        .then(data => {
-            const tableDiv = document.getElementById(`${tableName}_table`);
-            if (tableDiv) {
-                tableDiv.innerHTML = data.table_html;
-            }
-            updatePaginationLinks(tableName, pageNumber, data.total_pages, recordsPerPage);
-        })
-        .catch(error => {
-            console.error('Error fetching table data:', error);
-        });
 }
 function openTab(evt, tabName) {
     let i, tabcontent, tablinks;
@@ -302,44 +275,31 @@ async function sendMessage() {
     const queryResultsDiv = document.getElementById('query-results');
     const tablesContainer = document.getElementById("tables_container");
     const xlsxbtn = document.getElementById("xlsx-btn");
+    const sqlQueryContent = document.getElementById("sql-query-content");
+    const langPromptContent = document.getElementById("lang-prompt-content");
+    const interpPromptContent = document.getElementById("interp-prompt-content");
 
     let userMessage = userQueryInput.value.trim();
     if (!userMessage) return;
 
-    // Clear previous results
-    tablesContainer.innerHTML = "";  // Clear tables container
-    xlsxbtn.innerHTML = "";          // Clear download buttons
-    document.getElementById("sql-query-content").textContent = ""; // Clear SQL query
-    document.getElementById("user_query_display").querySelector('span').textContent = ""; // Clear user query display
+    // Clear previous results but keep chat history
+    tablesContainer.innerHTML = "";
+    xlsxbtn.innerHTML = "";
+    sqlQueryContent.textContent = "";
+    langPromptContent.textContent = "";
+    interpPromptContent.textContent = "";
+    document.getElementById("user_query_display").querySelector('span').textContent = "";
 
     // Get selected database and section
     const selectedDatabase = document.getElementById('database-dropdown').value;
-
-    // Get current database and section from session storage
-    const currentDatabase = sessionStorage.getItem('selectedDatabase');
-    const currentSection = sessionStorage.getItem('selectedSection');
-
-    if (selectedDatabase && selectedDatabase !== currentDatabase) {
-        sessionStorage.setItem('selectedDatabase', selectedDatabase);
-        location.reload();
-        return;
-    }
-
     const selectedSection = document.getElementById('section-dropdown').value;
-    if ((selectedDatabase && selectedDatabase !== currentDatabase) ||
-        (selectedSection && selectedSection !== currentSection)) {
-        sessionStorage.setItem('selectedDatabase', selectedDatabase);
-        sessionStorage.setItem('selectedSection', selectedSection);
-        location.reload();
-        return;
-    }
 
     if (!selectedDatabase || !selectedSection) {
         alert("Please select both a database and a subject area");
         return;
     }
 
-    // Append user message
+    // Append user message to chat
     chatMessages.innerHTML += `
         <div class="message user-message">
             <div class="message-content">${userMessage}</div>
@@ -348,7 +308,7 @@ async function sendMessage() {
     userQueryInput.value = "";
     chatMessages.scrollTop = chatMessages.scrollHeight;
 
-    // Show typing indicator
+    // Show loading state
     typingIndicator.style.display = "flex";
     queryResultsDiv.style.display = "block";
 
@@ -358,53 +318,175 @@ async function sendMessage() {
         formData.append('section', selectedSection);
         formData.append('database', selectedDatabase);
 
-        const response = await fetch("/submit", { method: "POST", body: formData });
-
-        if (!response.ok) throw new Error("Failed to fetch response");
+        const response = await fetch("/submit", {
+            method: "POST",
+            body: formData
+        });
 
         const data = await response.json();
-        typingIndicator.style.display = "none";
-
-        let botResponse = "";
-
-        if (!data.query) {
-            botResponse = data.chat_response || "I couldn't find any insights for this query.";
-        } else {
-            document.getElementById("sql-query-content").textContent = data.query;
-            botResponse = data.chat_response || "";
+        if (data.tables_data) {
+            // Convert the table data from server to a format we can use
+            clientTableData = {};
+            for (const tableName in data.tables_data) {
+                if (data.tables_data[tableName] && data.tables_data[tableName]['Table data']) {
+                    clientTableData[tableName] = data.tables_data[tableName]['Table data'];
+                }
+            }
         }
-        console.log("interprompt: ", data.interprompt);
-        console.log("LANGprompt: ", data.langprompt);
-        const langdata = data.langprompt.match(/template='([\s\S]*?)'\)\),/);
-        let promptText = langdata ? langdata[1] : "Not found";
+        // Always show these elements regardless of success/error
+        sqlQueryContent.textContent = data.query || "";
+        interpPromptContent.textContent = data.interprompt || "";
+
+        // Format and display langprompt
+        const langdata = data.langprompt?.match(/template='([\s\S]*?)'\)\),/);
+        let promptText = langdata ? langdata[1] : data.langprompt || "Not available";
+        console.log(promptText)
         promptText = promptText.replace(/\\n/g, '\n');
-        document.getElementById("lang-prompt-content").textContent = promptText;
-        Prism.highlightElement(document.getElementById("lang-prompt-content"));
-        document.getElementById("interp-prompt-content").textContent = data.interprompt;
-        chatMessages.innerHTML += `
-            <div class="message ai-message">
-                <div class="message-content">
-                    LLM Interpretation: ${data.llm_response}<br>
-                    ${botResponse}
+        langPromptContent.textContent = promptText;
+        Prism.highlightElement(langPromptContent);
+
+        // Hide typing indicator
+        typingIndicator.style.display = "none";
+        table_data = data.tables_data;
+        glob_table_data = table_data
+        if (!response.ok) {
+            // Error case - show error message but keep prompts visible
+            chatMessages.innerHTML += `
+                <div class="message ai-message error">
+                    <div class="message-content">
+                        <strong>Error:</strong> ${data.chat_response || "An unknown error occurred"}
+                    </div>
                 </div>
-            </div>
-        `;
+            `;
+        } else {
+            // Success case
+            let botResponse = "";
+
+            if (!data.query) {
+                botResponse = data.chat_response || "I couldn't find any insights for this query.";
+            } else {
+                botResponse = data.chat_response || "";
+            }
+
+            chatMessages.innerHTML += `
+                <div class="message ai-message">
+                    <div class="message-content">
+                        <strong>LLM Interpretation:</strong> ${data.llm_response || "Not available"}<br><br>
+                        ${botResponse}
+                    </div>
+                </div>
+            `;
+
+            if (data.tables) {
+                console.log()
+                const rows = table_data["Table data"];
+                const columnNames = (rows && rows.length > 0) ? Object.keys(rows[0]) : [];
+
+                // Now call your function with the column names
+                loadTableColumns(columnNames);
+                updatePageContent(data);
+            }
+        }
+        updatePageContent(data);
 
         chatMessages.scrollTop = chatMessages.scrollHeight;
+        table_data = data.tables_data;
+
         if (data.tables) {
             console.log()
-            tableName = data.tables[0].table_name;
-            loadTableColumns(tableName)
+            const rows = table_data["Table data"];
+            const columnNames = (rows && rows.length > 0) ? Object.keys(rows[0]) : [];
+
+            // Now call your function with the column names
+            loadTableColumns(columnNames);
             updatePageContent(data);
         }
     } catch (error) {
         console.error("Error:", error);
         typingIndicator.style.display = "none";
-        alert("Error processing request.");
+
+        chatMessages.innerHTML += `
+            <div class="message ai-message error">
+                <div class="message-content">
+                    <strong> Please try again.
+                </div>
+            </div>
+        `;
+
+        // Clear prompts on complete failure
+        sqlQueryContent.textContent = "Not available due to network error";
+        interpPromptContent.textContent = "";
+        langPromptContent.textContent = "";
     }
 }
+function setupClientPagination(tableName, fullData, currentPage, recordsPerPage) {
+    if (!fullData || !Array.isArray(fullData)) {
+        console.error(`Invalid data for table ${tableName}`, fullData);
+        return;
+    }
+    
+    const totalRecords = fullData.length;
+    const totalPages = Math.ceil(totalRecords / recordsPerPage);
+    
+    // Ensure currentPage is within bounds
+    currentPage = Math.max(1, Math.min(currentPage, totalPages));
+    
+    renderTablePage(tableName, fullData, currentPage, recordsPerPage);
+    updatePaginationLinks(tableName, currentPage, totalPages, recordsPerPage);
+}
+function changePage(tableName, pageNumber, recordsPerPage) {
+    console.log(`Changing to page ${pageNumber} for table ${tableName}`);
+    console.log('Client table data:', clientTableData);
+    
+    const fullData = clientTableData[tableName];
+    if (!fullData) {
+        console.error(`No data found for table: ${tableName}`);
+        return;
+    }
+    
+    setupClientPagination(tableName, fullData, pageNumber, recordsPerPage);
+}
 
-// Your existing mic recording function
+function renderTablePage(tableName, fullData, pageNumber, recordsPerPage) {
+    const startIndex = (pageNumber - 1) * recordsPerPage;
+    const endIndex = startIndex + recordsPerPage;
+    const pageData = fullData.slice(startIndex, endIndex);
+    
+    // Pass pageNumber to generateTableHtml
+    const tableHtml = generateTableHtml(pageData, pageNumber, recordsPerPage);
+    
+    const tableDiv = document.getElementById(`${tableName}_table`);
+    if (tableDiv) {
+        tableDiv.innerHTML = tableHtml;
+    }
+}
+function generateTableHtml(data, pageNumber = 1, recordsPerPage = 10) {
+    if (!data || data.length === 0) return '<div class="no-data">No data available</div>';
+    
+    let html = '<table class="data-table"><thead><tr><th>S.No</th>';
+    
+    // Create headers from the first item's keys
+    Object.keys(data[0]).forEach(header => {
+        html += `<th>${header}</th>`;
+    });
+    html += '</tr></thead><tbody>';
+    
+    // Calculate starting serial number based on page number
+    const startSerial = (pageNumber - 1) * recordsPerPage + 1;
+    
+    // Create rows with correct serial numbers
+    data.forEach((row, index) => {
+        html += `<tr><td>${startSerial + index}</td>`; // Use calculated serial number
+        
+        Object.values(row).forEach(cell => {
+            html += `<td>${cell}</td>`;
+        });
+        html += '</tr>';
+    });
+    
+    html += '</tbody></table>';
+    return html;
+}// Your existing mic recording function
 async function toggleRecording() {
     const micButton = document.getElementById("chat-mic-button");
 
@@ -708,105 +790,113 @@ function chooseExampleQuestion() {
  */
 function updatePageContent(data) {
     const userQueryDisplay = document.getElementById("user_query_display");
-    const sqlQueryContent = document.getElementById("sql-query-content"); // Get the modal content
+    const sqlQueryContent = document.getElementById("sql-query-content");
     const tablesContainer = document.getElementById("tables_container");
-    const xlsxbtn = document.getElementById("xlsx-btn"); // Excel button container
-    const emailbtn = document.getElementById("email-btn"); // Excel button container
-    const faqbtn = document.getElementById("add-to-faqs-btn");
-    // Update user query text
+    const xlsxbtn = document.getElementById("xlsx-btn");
+    const selectedSection = document.getElementById('section-dropdown').value;
+    // Always update these elements regardless of success/failure
     userQueryDisplay.querySelector('span').textContent = data.user_query || "";
+    const formattedQuery = data.query
+            .replace(/FROM/g, '\nFROM')
+            .replace(/WHERE/g, '\nWHERE')
+            .replace(/INNER JOIN/g, '\nINNER JOIN')
+            .replace(/LEFT JOIN/g, '\nLEFT JOIN')
+            .replace(/RIGHT JOIN/g, '\nRIGHT JOIN')
+            .replace(/FULL JOIN/g, '\nFULL JOIN')
+            .replace(/GROUP BY/g, '\nGROUP BY')
+            .replace(/ORDER BY/g, '\nORDER BY')
+            .replace(/HAVING/g, '\nHAVING')
+            .replace(/SELECT/g, '\nSELECT')
+            .replace(/ON/g, '\nON');
+    sqlQueryContent.textContent = formattedQuery || "No SQL query available";
 
-    // Clear and update tables container
+    // Clear containers
     tablesContainer.innerHTML = "";
-    xlsxbtn.innerHTML = ""; // Clear Excel button container before adding new buttons
-    if (data.tables && data.tables.length > 0) {
-        data.tables.forEach((table) => {
-            const tableWrapper = document.createElement("div");
+    xlsxbtn.innerHTML = "";
 
-            tableWrapper.innerHTML = `
-                <div id="${table.table_name}_table">${table.table_html}</div>
-                <div id="${table.table_name}_pagination"></div>
-                <div id="${table.table_name}_error"></div>
-                <div class="feedback-section">
-                    <button class="like-button" data-table="${table.table_name}" onclick="submitFeedback('${table.table_name}', 'like')">Like</button>
-                    <button class="dislike-button" data-table="${table.table_name}" onclick="submitFeedback('${table.table_name}', 'dislike')">Dislike</button>
-                    <span id="${table.table_name}_feedback_message"></span>
-                </div>
-            `;
+    // Always create these buttons (they'll be visible but potentially disabled)
+    const viewQueryBtn = document.createElement("button");
+    viewQueryBtn.textContent = "SQL Query";
+    viewQueryBtn.id = "view-sql-query-btn";
+    viewQueryBtn.onclick = showSQLQueryPopup;
+    viewQueryBtn.style.display = "block";
+    viewQueryBtn.disabled = !data.query; // Disable if no query available
 
-            tablesContainer.appendChild(tableWrapper);
+    const faqBtn = document.createElement("button");
+    faqBtn.textContent = "Add to FAQs";
+    faqBtn.id = "add-to-faqs-btn";
+    faqBtn.onclick = () => addToFAQs(selectedSection);
+    faqBtn.style.display = "block";
 
-            // Create "Download Excel" button with spacing
-            const downloadButton = document.createElement("button");
-            downloadButton.id = `download-button-${table.table_name}`;
-            downloadButton.className = "download-btn";
-            downloadButton.innerHTML = `<img src="static/excel.png" alt="xlsx" class="excel-icon"> Download Excel`;
-            downloadButton.onclick = () => downloadSpecificTable(table.table_name);
+    // const emailBtn = document.createElement("button");
+    // emailBtn.id = "send-email-btn";
+    // emailBtn.textContent = "Send Email";
+    // emailBtn.style.display = "block";
+    // emailBtn.disabled = !data.tables; // Disable if no tables available
 
-            xlsxbtn.appendChild(downloadButton);
-            // Add pagination
-            updatePaginationLinks(
-                table.table_name,
-                table.pagination.current_page,
-                table.pagination.total_pages,
-                table.pagination.records_per_page
-            );
+    // Add buttons to container
+    xlsxbtn.appendChild(viewQueryBtn);
+    xlsxbtn.appendChild(faqBtn);
+    // xlsxbtn.appendChild(emailBtn);
 
-        });
-    } else {
-        tablesContainer.innerHTML = "<p>No tables to display.</p>";
-    }
-    // Add copy button in top-right of popup
+    // Add copy button for SQL query
     const copyButton = document.createElement('button');
     copyButton.innerHTML = '<i class="fas fa-copy"></i>';
     copyButton.className = 'copy-btn-popup';
     copyButton.addEventListener('click', () => {
-        const sqlQueryText = document.getElementById("sql-query-content").textContent;
-        navigator.clipboard.writeText(sqlQueryText)
-            .then(() => {
-                alert('SQL query copied to clipboard!');
-            })
-            .catch(err => {
-                console.error('Failed to copy: ', err);
-                alert('Failed to copy SQL query to clipboard.');
-            });
+        const sqlQueryText = sqlQueryContent.textContent;
+        if (sqlQueryText && sqlQueryText !== "No SQL query available") {
+            navigator.clipboard.writeText(sqlQueryText)
+                .then(() => alert('SQL query copied to clipboard!'))
+                .catch(err => console.error('Failed to copy:', err));
+        }
     });
-
-    // Ensure this is inside the modal
     sqlQueryContent.parentNode.appendChild(copyButton);
 
-    // Add the "View SQL Query" button BELOW the Download Excel button
-    if (data.query) {
-        sqlQueryContent.textContent = data.query;
+    // Handle table display (if data exists)
+    if (data.tables && data.tables.length > 0) {
+        data.tables.forEach((table) => {
+            if (data.tables_data && data.tables_data[table.table_name]) {
+                clientTableData[table.table_name] = data.tables_data[table.table_name]['Table data'] ||
+                    data.tables_data[table.table_name];
+            }
+            const tableWrapper = document.createElement("div");
+            tableWrapper.innerHTML = `
+                <div id="${table.table_name}_table">${table.table_html}</div>
+                <div id="${table.table_name}_pagination"></div>
+                <div class="feedback-section">
+                    <button class="like-button" data-table="${table.table_name}" onclick="submitFeedback('${table.table_name}', 'like')">Like</button>
+                    <button class="dislike-button" data-table="${table.table_name}" onclick="submitFeedback('${table.table_name}', 'dislike')">Dislike</button>
+                    <span id="${table.table_name}_feedback_message"></span>
+                </div>
+            `;
+            tablesContainer.appendChild(tableWrapper);
+            table_data = data.tables_data;
 
-        // Create "View SQL Query" button dynamically
-        const viewQueryBtn = document.createElement("button");
-        viewQueryBtn.textContent = "SQL Query";
-        viewQueryBtn.id = "view-sql-query-btn";
-        viewQueryBtn.onclick = showSQLQueryPopup;
-        viewQueryBtn.style.display = "block"; // Ensure button appears in a new line
-        const faqBtn = document.createElement("button");
-        faqBtn.textContent = "Add to FAQs";
-        faqBtn.id = "add-to-faqs-btn";
-        faqBtn.onclick = addToFAQs;
-        faqBtn.style.display = "block"; // Ensure button appears in a new line
-        const emailbtn = document.createElement("button");
-        emailbtn.id = "send-email-btn";
+            // Add download button for each table
+            const downloadButton = document.createElement("button");
+            downloadButton.id = `download-button-${table.table_name}`;
+            downloadButton.className = "download-btn";
+            downloadButton.innerHTML = `<img src="static/excel.png" alt="xlsx" class="excel-icon"> Download Excel`;
+            downloadButton.onclick = () => downloadSpecificTable(table_data);
+            xlsxbtn.appendChild(downloadButton);
 
-        emailbtn.textContent = "Send Email";
-
-        emailbtn.style.display = "block";
-        xlsxbtn.appendChild(viewQueryBtn); // Append below the Excel download button
-        xlsxbtn.appendChild(faqBtn);
-        xlsxbtn.appendChild(emailbtn) // Append below the Excel download button
+            setupClientPagination(
+                table.table_name,
+                clientTableData[table.table_name],
+                table.pagination.current_page,
+                table.pagination.records_per_page
+            );
+        });
     } else {
-        sqlQueryContent.textContent = "No SQL query available.";
+        tablesContainer.innerHTML = `<div class="no-data-message">
+            <p>${data.chat_response || "No data available"}</p>
+        </div>`;
     }
-}
-/**
+}/**
  *
  */
-function addToFAQs() {
+function addToFAQs(subject) {
     let userQuery = document.querySelector("#user_query_display span").innerText;
 
     if (!userQuery.trim()) {
@@ -814,7 +904,7 @@ function addToFAQs() {
         return;
     }
 
-    fetch('/add_to_faqs', {
+    fetch(`/add_to_faqs?subject=${encodeURIComponent(subject)}`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'
@@ -833,10 +923,38 @@ function addToFAQs() {
 /**
  * @param {any} tableName
  */
-function downloadSpecificTable(tableName) {
-    // Corrected: Using template literals to construct the URL
-    const downloadUrl = `/download-table?table_name=${encodeURIComponent(tableName)}`;
-    window.location.href = downloadUrl;
+function downloadSpecificTable(table_data) {
+    // Send a POST request with table_data as JSON
+    fetch('/download-table', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            table_name: "DBQuery_data",
+            table_data: table_data
+        })
+    })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.blob(); // Get the binary Excel file
+        })
+        .then(blob => {
+            // Create a link to download the file
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `DBQuery_data.xlsx`;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            window.URL.revokeObjectURL(url);
+        })
+        .catch(error => {
+            console.error('There was a problem with the fetch operation:', error);
+        });
 }
 /**
  *

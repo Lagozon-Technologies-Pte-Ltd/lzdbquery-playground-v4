@@ -248,7 +248,7 @@
     },
     {
       "table_name": "MH_CUST_VERBATIM",
-      "table_description": "Contains customer issue verbatim related to repair orders or RO data",
+      "table_description": "Contains customer issue verbatim related to repair orders data",
       "columns": [
         {
           "column_name": "ro_number",
@@ -296,7 +296,7 @@
     },
     {
       "table_name": "MH_RO_LABOUR",
-      "table_description": "Contains OEM and Local Labor consumed in repair orders or RO data",
+      "table_description": "Contains OEM and Local Labor consumed in repair orders data",
       "columns": [
         {
           "column_name": "sv_ro_hdr_sk",
@@ -398,7 +398,7 @@
     },
     {
       "table_name": "MH_RO_PARTS",
-      "table_description": "Contains OEM and Local Parts consumed in repair orders or RO data",
+      "table_description": "Contains OEM and Local Parts consumed in repair orders data",
       "columns": [
         {
           "column_name": "sv_ro_hdr_sk",
@@ -608,7 +608,7 @@
     },
     {
       "table_name": "MH_RO_HDR_DETAILS",
-      "table_description": "Contains Repair Order or RO header details links to the Parts details for the Repair ORder or RO and links to the Labour details for the Repair ORder or RO  ",
+      "table_description": "Contains Repair Order header details",
       "columns": [
         {
           "column_name": "RO_CANCL_DATE",
@@ -858,27 +858,27 @@
         },
         {
           "column_name": "RO_GT_72",
-          "data_type": "NUMERIC",
+          "data_type": "STRING",
           "nullable": true,
-          "description": " Value of column SV_RO_HDR_SK is stored in this column for those ROs where it took more than 72 hours for repair"
+          "description": "RO Greater Than 72 Hours"
         },
         {
           "column_name": "RO_LT_ET_72",
-          "data_type": "NUMERIC",
+          "data_type": "STRING",
           "nullable": true,
-          "description": "Value of column SV_RO_HDR_SK is stored in this column for those ROs where it took less Than or equal to 72 hours for repair"
+          "description": "RO Less Than or Equal To 72 Hours"
         },
         {
           "column_name": "RO_LT_ET_48",
-          "data_type": "NUMERIC",
+          "data_type": "STRING",
           "nullable": true,
-          "description": "Value of column SV_RO_HDR_SK is stored in this column for those ROs where it took less Than or equal to 48 hours for repair"
+          "description": "RO Less Than or Equal To 48 Hours"
         },
         {
           "column_name": "RO_LT_ET_24",
-          "data_type": "NUMERIC",
+          "data_type": "STRING",
           "nullable": true,
-          "description": "Value of column SV_RO_HDR_SK is stored in this column for those ROs where it took less Than or equal to 24 hours for repair"
+          "description": "RO Less Than or Equal To 24 Hours"
         },
         {
           "column_name": "RO_CLOSE_DIFF",
@@ -1232,7 +1232,7 @@
           "column_name": "taxi_indicator",
           "data_type": "STRING",
           "nullable": true,
-          "description": "This column indicates if the vehicle under given RO or Repair Order is a Taxi or not. It contains the value as NON TAXI AND TAXI"
+          "description": "Taxi Indicator"
         },
         {
           "column_name": "bay_type_name",

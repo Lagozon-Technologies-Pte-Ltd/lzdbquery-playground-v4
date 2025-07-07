@@ -3,7 +3,7 @@ import os, json
 import configure
 from operator import itemgetter
 from langchain.chains.openai_tools import create_extraction_chain_pydantic 
-from langchain_core.pydantic_v1 import BaseModel, Field
+from pydantic import BaseModel, Field
 from langchain_openai import ChatOpenAI 
 from openai import AzureOpenAI
 from langchain_openai import AzureChatOpenAI
@@ -24,33 +24,42 @@ llm = AzureChatOpenAI(
 )
 
 from typing import List
-__import__('pysqlite3')
-import sys
-sys.modules['sqlite3'] = sys.modules.pop('pysqlite3')
-
-def get_table_details(selected_subject='Demo', table_name=None):
+# __import__('pysqlite3')
+# import sys
+# sys.modules['sqlite3'] = sys.modules.pop('pysqlite3')
+def get_table_details(table_name=None):
     """
-    Returns details for one or more tables from a subject-specific CSV file.
-    - selected_subject: base name of CSV file (without .csv)
+    Returns details for one or more tables from hardcoded JSON files.
     - table_name: string or list of strings (table names to filter on)
     """
-    # Build the path to the CSV file
-    select_database_table_desc_csv = selected_subject + ".csv"
-    path = f'table_files/{select_database_table_desc_csv}'
+    # Hardcoded file paths
+    table_path = os.path.join('table_files', 'expanded_tables.json')
+    column_path = os.path.join('table_files', 'expanded_columns.json')
     
+    # Load table data
     try:
-        table_description = pd.read_csv(path)
+        with open(table_path, 'r', encoding='utf-8') as f:
+            table_data = json.load(f)
     except FileNotFoundError:
-        return f"File not found: {path}"
+        return f"File not found: {table_path}"
     except Exception as e:
-        return f"Error reading file: {e}"
+        return f"Error reading table file: {e}"
 
-    table_details = ""
-    print("path for csv: ", path)
+    if not isinstance(table_data, list):
+        return "Invalid table JSON format: must be a list of table objects."
+    
+    # Load column data
+    try:
+        with open(column_path, 'r', encoding='utf-8') as f:
+            column_data = json.load(f)
+    except FileNotFoundError:
+        return f"File not found: {column_path}"
+    except Exception as e:
+        return f"Error reading column file: {e}"
 
-    # Check if 'data_type' column exists
-    has_data_type = 'data_type' in table_description.columns
-
+    if not isinstance(column_data, list):
+        return "Invalid column JSON format: must be a list of column objects."
+    
     # Normalize table_name(s) for filtering
     table_names = []
     if table_name:
@@ -60,39 +69,46 @@ def get_table_details(selected_subject='Demo', table_name=None):
             table_names = [t.strip().lower() for t in table_name if t.strip()]
         else:
             return "Invalid table_name argument."
-        filtered = table_description[table_description['table_name'].str.lower().isin(table_names)]
-        if filtered.empty:
+        filtered_tables = [t for t in table_data if t.get('id', '').strip().lower() in table_names]
+        if not filtered_tables:
             return f"No details found for table(s): {', '.join(table_names)}"
-        grouped = filtered.groupby(['table_name', 'table_description'])
     else:
-        grouped = table_description.groupby(['table_name', 'table_description'])
+        filtered_tables = table_data
 
-    for (table, desc), group in grouped:
-        table_details += f"Table Name: {table}\n"
-        table_details += f"Table Description: {desc}\n"
+    # Build details for each table
+    table_details = ""
+    for table in filtered_tables:
+        tname = table.get('id', '').strip()
+        tdesc = table.get('document', '').strip()  # or 'table_description' if that's your key
+        table_details += f"Table Name: {tname}\n"
+        table_details += f"Table Description: {tdesc}\n"
         table_details += "Columns:\n"
-        for i, row in group.iterrows():
-            # Parse column_name&description
-            col_info = row.get('column_name&description', '')
-            if ':' in col_info:
-                col_name, col_desc = col_info.split(':', 1)
-                col_name = col_name.strip()
-                col_desc = col_desc.strip()
-            else:
-                col_name = col_info.strip()
-                col_desc = ""
-            # Add data type if present
-            if has_data_type:
-                data_type = row['data_type']
-                table_details += f"  - {col_name} ({data_type}): {col_desc}\n"
-            else:
-                table_details += f"  - {col_name}: {col_desc}\n"
+        
+        # Find columns for this table
+        columns = [col for col in column_data if col.get('metadata', {}).get('table_name', '').strip().lower() == tname.lower()]
+        if columns:
+            for col in columns:
+                col_meta = col.get('metadata', {})
+                col_name = col.get('column_name', '').split('.')[-1]
+                data_type = col_meta.get('data_type', '')
+                nullable = col_meta.get('nullable', False)
+                description = col.get('column_desc', '')
+                is_pk = col_meta.get('is_primary_key', False)
+                is_fk = col_meta.get('is_foreign_key', False)
+                flags = []
+                if is_pk: flags.append("PK")
+                if is_fk: flags.append("FK")
+                if nullable: flags.append("NULLABLE")
+                flag_str = " [" + ", ".join(flags) + "]" if flags else ""
+                table_details += f"  - {col_name} ({data_type}){flag_str}: {description}\n"
+        else:
+            table_details += "  No column details found.\n"
         table_details += "\n"
 
-    if not table_details:
-        table_details = "No tables found in the CSV."
+    if not table_details.strip():
+        table_details = "No tables found in the JSON."
     
-    return table_details
+    return table_details.strip()
 class Table(BaseModel):
     """Table in SQL database."""
 
@@ -102,12 +118,12 @@ def get_tables(tables: List[Table]) -> List[str]:
     tables  = [table.name for table in tables]
     return tables
 
-def get_table_metadata(selected_subject='Demo'):
+def get_table_metadata(json_filename='expanded_tables.json'):
     """
-    Returns a list of table names and their descriptions from a subject-specific JSON file.
-    - selected_subject: base name of JSON file (without .json)
+    Returns a list of table names and their descriptions from a JSON array file.
+    - json_filename: name of the JSON file (should be an array of objects)
     """
-    path = f'tables_details.json'
+    path = f'table_files/{json_filename}'
     
     try:
         with open(path, 'r', encoding='utf-8') as f:
@@ -117,16 +133,17 @@ def get_table_metadata(selected_subject='Demo'):
     except Exception as e:
         return f"Error reading file: {e}"
 
-    if 'tables' not in data or not isinstance(data['tables'], list):
-        return "JSON must contain a 'tables' list."
+    if not isinstance(data, list):
+        return "JSON file must be a list of table objects."
 
     table_info = ""
     seen = set()
-    for table in data['tables']:
-        table_name = table.get('table_name')
-        table_description = table.get('table_description')
+    for table in data:
+        table_name = table.get('id')
+        table_description = table.get('document')
         if not table_name or not table_description:
             continue
+        table_name = table_name.strip()
         if table_name not in seen:
             seen.add(table_name)
             table_info += f"Table Name: {table_name}\nDescription: {table_description}\n\n"
