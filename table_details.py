@@ -24,9 +24,9 @@ llm = AzureChatOpenAI(
 )
 
 from typing import List
-# __import__('pysqlite3')
-# import sys
-# sys.modules['sqlite3'] = sys.modules.pop('pysqlite3')
+__import__('pysqlite3')
+import sys
+sys.modules['sqlite3'] = sys.modules.pop('pysqlite3')
 def get_table_details(table_name=None):
     """
     Returns details for one or more tables from hardcoded JSON files.
