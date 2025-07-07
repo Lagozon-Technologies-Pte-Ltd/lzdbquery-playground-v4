@@ -14,39 +14,50 @@ unified_prompt: |
 
   Example Rephrasing:
     Chat History 1:
-      - user: "What is the demanded verbatim for RO number 'RO25A007880'?"
-        rephrased: "Retrieve the demanded verbatim for repair order number RO25A007880."
-      - user: "Only include those with feedback category 'Engine'"
-        rephrased: "Retrieve the demanded verbatim for repair order number RO25A007880 with feedback category 'Engine'."
-      - user: "Add service date in the result"
-        rephrased: "Retrieve the demanded verbatim and service date for repair order number RO25A007880 with feedback category 'Engine'."
-      - user: "Show group descriptions too"
-        rephrased: "Retrieve the demanded verbatim, group descriptions, and service date for repair order number RO25A007880 with feedback category 'Engine'."
-    
-    Chat History 2:
-      - user: "Show customer feedback category for RO number 'RO25A007880'"
-        rephrased: "Retrieve the customer feedback category for repair order number RO25A007880."
-      - user: "Filter it to only positive feedbacks"
-        rephrased: "Retrieve the customer feedback category for repair order number RO25A007880 with only positive feedback."
-      - user: "Service advisor name"
-        rephrased: "Retrieve the customer feedback category and service advisor name for repair order number RO25A007880 with only positive feedback."
-      - user: "Restrict to Southern Region"
-        rephrased: "Retrieve the customer feedback category and service advisor name for repair order number RO25A007880 with only positive feedback, limited to the Southern Region."
-    
-    Chat History 3:
-      - user: "What is the demanded verbatim for RO number 'RO18B005320'?"
-        rephrased: "Retrieve the demanded verbatim for repair order number RO18B005320."
-      - user: "Show only those related to transmission issues"
-        rephrased: "Retrieve the demanded verbatim for repair order number RO18B005320 related to transmission issues."
-    
-    Chat History 4:
-      - user: "Show customer feedback category for RO number 'RO19C003760'"
-        rephrased: "Retrieve the customer feedback category for repair order number RO19C003760."
-      - user: "Only include feedbacks rated as negative"
-        rephrased: "Retrieve the customer feedback category for repair order number RO19C003760 with only negative feedback."
-      - user: "Add technician name to the output"
-        rephrased: "Retrieve the customer feedback category and technician name for repair order number RO19C003760 with only negative feedback."
+      - user: "Display count of distinct labour descriptions for the RO: RO25D000730"
+        rephrased: "Select the count of distinct labour descriptions for the Repair Order Number RO25D000730."
+      - user: "Also include the actual labour descriptions in the output"
+        rephrased: "Retrieve the count and list of distinct labour descriptions for the Repair Order Number RO25D000730."
+      - user: "Filter only OEM labour"
+        rephrased: "Retrieve the count and list of distinct OEM labour descriptions for the Repair Order Number RO25D000730."
 
+    Chat History 2:
+
+    -  user: "Show the total labour amount and parts amount for each RO from 01-Jan-2025 to 31-Jan-2025"
+       rephrased: "Retrieve the total labour amount and total parts amount grouped by Repair Order Number for service dates between 01-Jan-2025 and 31-Jan-2025."
+    -  user: "Only include ROs with labour amount greater than ₹1000"
+       rephrased: "Retrieve the total labour and parts amounts grouped by RO for service dates between 01-Jan-2025 and 31-Jan-2025, where the labour amount is greater than ₹1000."
+    -  user: "Add technician name to each RO"
+       rephrased: "Retrieve the total labour and parts amounts grouped by RO for service dates between 01-Jan-2025 and 31-Jan-2025, where the labour amount is greater than ₹1000, and include technician names."
+   
+    Chat History 3:
+
+    -  user: "Get all ROs closed within last 180 days"
+       rephrased: "Retrieve all repair orders closed within the last 180 days."
+    -  user: "Only include Paid Services"
+       rephrased: "Retrieve all Paid Service repair orders closed within the last 180 days."
+    -  user: "Add vehicle registration number and model code"
+       rephrased: "Retrieve all Paid Service repair orders closed within the last 180 days, including vehicle registration number and model code."
+    
+   Chat History 4:
+
+    -  user: "List all parts with a discount greater than 10% for the RPs created in Jan'25"
+       rephrased: "List all parts with a discount greater than 10% for repair orders created in January 2025."
+    -  user: "Only include OEM parts"
+       rephrased: "List all OEM parts with a discount greater than 10% for repair orders created in January 2025."
+    -  user: "Add part description and part value before and after discount"
+       rephrased: "List all OEM parts with a discount greater than 10% for repair orders created in January 2025, including part description and value before and after discount."
+   
+    Chat History 5:
+
+    -  user: "Show the number of ROs per dealer for the month of Jan'25"
+       rephrased: "Count the number of repair orders per dealer for January 2025."
+    -  user: "Only include dealers from South Zone"
+       rephrased: "Count the number of repair orders per dealer in the South Zone for January 2025."
+    -  user: "Add total labour and parts amount per dealer"
+       rephrased: "Count the number of repair orders per dealer in the South Zone for January 2025 and include total labour and parts amount per dealer."
+   
+            
   Expected JSON Output Format:
     - Return only the JSON object.
     - Do not include any formatting, markdown, triple backticks, or additional explanations.

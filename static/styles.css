@@ -13,7 +13,38 @@ body {
     color: #21126b;
     font-size: 18px;
 }
+/* Pointer cursors for clickable elements */
+a, button, input[type="button"], input[type="submit"], 
+input[type="reset"], [role="button"], .btn, 
+.tab button, .switch, .close-btn, .page-item a,
+.download-btn, #send-button, #chat-mic-button,
+#view-sql-query-btn, #add-to-faqs-btn, #send-email-btn,
+#interpBtn, #langchainBtn, #generate-chart-button {
+    cursor: pointer !important;
+}
 
+/* Text input cursors */
+input[type="text"], input[type="search"], input[type="email"], 
+input[type="password"], input[type="number"], input[type="tel"],
+textarea, [contenteditable] {
+    cursor: text;
+}
+
+/* Table specific cursors */
+.data-table tr {
+    cursor: default;
+}
+
+/* Disabled elements */
+[disabled], :disabled {
+    cursor: not-allowed !important;
+}
+
+/* Links within messages */
+.message-content a {
+    cursor: pointer;
+    text-decoration: underline;
+}
 .query-details-header {
     display: flex;
     align-items: center;
